@@ -183,6 +183,17 @@
     }
   }
 
+  @keyframes gvt-task-reveal {
+    0% {
+      opacity: 0;
+      transform: translateX(-14px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   @keyframes gvt-vote-pop {
     0% {
       transform: scale(1);

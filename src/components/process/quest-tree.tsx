@@ -36,6 +36,7 @@ interface QuestTreeProps {
   tipsByTask: TipsByTask;
   isAuthenticated: boolean;
   readOnly?: boolean;
+  animateIn?: boolean;
 }
 
 type TaskState = "none" | "half" | "done" | "not_necessary" | "denied";
@@ -61,6 +62,7 @@ export function QuestTree({
   tipsByTask,
   isAuthenticated,
   readOnly = false,
+  animateIn = false,
 }: QuestTreeProps) {
   const allTaskKeys = useMemo(() => collectUniqueTaskKeys(tasks), [tasks]);
   const storageKey = useMemo(() => `quest-progress:${processKey}`, [processKey]);
@@ -196,6 +198,8 @@ export function QuestTree({
         isAuthenticated={isAuthenticated}
         readOnly={false}
         level={0}
+        sequenceOffset={0}
+        animateIn={animateIn}
         taskStateByKey={taskStateByKey}
         onTaskStateChange={setTaskState}
       />
@@ -232,6 +236,8 @@ function TaskAccordion({
   isAuthenticated,
   readOnly,
   level,
+  sequenceOffset,
+  animateIn,
   taskStateByKey,
   onTaskStateChange,
 }: {
@@ -240,12 +246,18 @@ function TaskAccordion({
   isAuthenticated: boolean;
   readOnly: boolean;
   level: number;
+  sequenceOffset: number;
+  animateIn: boolean;
   taskStateByKey: Record<string, TaskState>;
   onTaskStateChange: (taskKey: string, state: TaskState) => void;
 }) {
+  let runningSequence = sequenceOffset;
+
   return (
     <Accordion type="multiple" className={cn("space-y-3", level > 0 && "ml-4")}>
       {tasks.map((task, index) => {
+        const itemSequence = runningSequence;
+        runningSequence += 1 + countTaskNodes(task.children);
         const tips = tipsByTask[task.key] ?? [];
         const taskState = taskStateByKey[task.key] ?? "none";
         const isDone = !readOnly && taskState === "done";
@@ -257,7 +269,11 @@ function TaskAccordion({
           <AccordionItem
             key={task.id}
             value={`${task.id}-${level}`}
-            className="relative ml-6 overflow-visible border border-border/70 bg-card/90"
+            className={cn(
+              "relative ml-6 overflow-visible border border-border/70 bg-card/90",
+              animateIn && "opacity-0 animate-[gvt-task-reveal_360ms_ease-out_forwards]",
+            )}
+            style={animateIn ? { animationDelay: `${itemSequence * 120}ms` } : undefined}
           >
             <ChecklistConnector
               isFirst={index === 0}
@@ -347,6 +363,8 @@ function TaskAccordion({
                       isAuthenticated={isAuthenticated}
                       readOnly={readOnly}
                       level={level + 1}
+                      sequenceOffset={itemSequence + 1}
+                      animateIn={animateIn}
                       taskStateByKey={taskStateByKey}
                       onTaskStateChange={onTaskStateChange}
                     />
@@ -906,6 +924,16 @@ function collectUniqueTaskKeys(tasks: TaskNode[]): string[] {
   visit(tasks);
 
   return Array.from(keys);
+}
+
+function countTaskNodes(tasks: TaskNode[]): number {
+  let total = 0;
+
+  for (const task of tasks) {
+    total += 1 + countTaskNodes(task.children);
+  }
+
+  return total;
 }
 
 function parseStoredTaskState(raw: string | null): Record<string, TaskState> {
