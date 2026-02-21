@@ -1,0 +1,205 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --font-sans: "Avenir Next", "Inter", "Segoe UI", "SF Pro Text", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  --shadow-soft: 0 1px 0 0 hsl(var(--border));
+}
+
+:root {
+  --background: 210 28% 96%;
+  --foreground: 220 24% 22%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 220 30% 20%;
+
+  --muted: 210 24% 92%;
+  --muted-foreground: 220 16% 44%;
+
+  --border: 214 30% 88%;
+  --input: 214 30% 88%;
+  --ring: 213 84% 60%;
+
+  --primary: 214 84% 58%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 161 78% 45%;
+  --secondary-foreground: 0 0% 100%;
+
+  --accent: 43 96% 55%;
+  --accent-foreground: 220 28% 16%;
+
+  --destructive: 0 78% 63%;
+  --destructive-foreground: 0 0% 100%;
+
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+}
+
+.dark {
+  --background: 222 21% 12%;
+  --foreground: 210 20% 92%;
+
+  --card: 222 18% 15%;
+  --card-foreground: 210 20% 92%;
+
+  --muted: 222 14% 20%;
+  --muted-foreground: 214 14% 70%;
+
+  --border: 220 12% 28%;
+  --input: 220 12% 28%;
+  --ring: 214 90% 66%;
+
+  --primary: 212 92% 66%;
+  --primary-foreground: 222 28% 10%;
+
+  --secondary: 164 62% 45%;
+  --secondary-foreground: 222 28% 10%;
+
+  --accent: 44 94% 60%;
+  --accent-foreground: 222 28% 10%;
+
+  --destructive: 0 80% 64%;
+  --destructive-foreground: 0 0% 100%;
+}
+
+:root[data-contrast="high"] {
+  --background: 0 0% 100%;
+  --foreground: 220 30% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 30% 10%;
+  --muted: 220 20% 93%;
+  --muted-foreground: 220 24% 18%;
+  --border: 220 20% 60%;
+  --primary: 220 86% 46%;
+  --secondary: 159 82% 34%;
+  --accent: 42 97% 45%;
+}
+
+.dark[data-contrast="high"] {
+  --background: 222 25% 8%;
+  --foreground: 210 30% 96%;
+  --card: 222 23% 10%;
+  --card-foreground: 210 30% 96%;
+  --muted: 222 14% 16%;
+  --muted-foreground: 210 20% 80%;
+  --border: 220 12% 42%;
+  --primary: 212 96% 72%;
+  --secondary: 164 70% 52%;
+  --accent: 44 96% 64%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-image: none;
+  }
+
+  a {
+    color: hsl(var(--foreground));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+@layer components {
+  @keyframes gvt-cloud-drift {
+    0%, 100% {
+      transform: translateX(0);
+      opacity: 0.78;
+    }
+    50% {
+      transform: translateX(1.5px);
+      opacity: 0.98;
+    }
+  }
+
+  @keyframes gvt-star-twinkle {
+    0%, 100% {
+      opacity: 0.25;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes gvt-tip-slide {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .theme-toggle-cloud {
+    animation: gvt-cloud-drift 6s ease-in-out infinite;
+  }
+
+  .theme-toggle-star {
+    animation: gvt-star-twinkle 3.3s ease-in-out infinite;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .dashboard-card {
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card) / 0.92);
+    box-shadow: none;
+  }
+}
