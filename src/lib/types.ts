@@ -21,6 +21,7 @@ export interface TipView {
   downvotes: number;
   score: number;
   createdAt: string;
+  viewerVote: "upvote" | "downvote" | null;
 }
 
 export type TipsByTask = Record<string, TipView[]>;

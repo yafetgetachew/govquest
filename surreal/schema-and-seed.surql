@@ -20,6 +20,8 @@ DEFINE TABLE IF NOT EXISTS feedback SCHEMALESS;
 -- Graph edges
 DEFINE TABLE IF NOT EXISTS requires TYPE RELATION IN process | task OUT task SCHEMALESS;
 DEFINE TABLE IF NOT EXISTS posted TYPE RELATION IN user OUT tip SCHEMALESS;
+DEFINE TABLE IF NOT EXISTS voted TYPE RELATION IN user OUT tip SCHEMALESS;
+DEFINE INDEX IF NOT EXISTS voted_user_tip_idx ON voted COLUMNS in, out UNIQUE;
 
 -- Helpful field definitions (MVP stays schemaless for flexibility)
 DEFINE FIELD IF NOT EXISTS title ON process TYPE string;
@@ -40,10 +42,14 @@ DEFINE FIELD IF NOT EXISTS created_at ON feedback TYPE datetime VALUE time::now(
 
 DEFINE FIELD IF NOT EXISTS task_id ON posted TYPE option<record<task>>;
 DEFINE FIELD IF NOT EXISTS created_at ON posted TYPE datetime VALUE time::now();
+DEFINE FIELD IF NOT EXISTS direction ON voted TYPE string;
+DEFINE FIELD IF NOT EXISTS created_at ON voted TYPE datetime VALUE time::now();
+DEFINE FIELD IF NOT EXISTS updated_at ON voted TYPE datetime VALUE time::now();
 
 -- Deterministic reset of MVP seed data
 DELETE requires WHERE true;
 DELETE posted WHERE true;
+DELETE voted WHERE true;
 DELETE tip WHERE true;
 DELETE feedback WHERE true;
 DELETE task WHERE true;

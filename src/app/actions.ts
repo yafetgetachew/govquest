@@ -12,10 +12,24 @@ import {
   queryResult,
   stripTablePrefix,
   toRecordId,
+  toSafeInt,
 } from "@/lib/surreal-utils";
 
 const TIP_MAX_LENGTH = 1200;
 const FEEDBACK_MAX_LENGTH = 2000;
+
+export type VoteDirection = "upvote" | "downvote";
+
+export interface VoteActionResult {
+  ok: boolean;
+  status: "applied" | "removed" | "switched" | "invalid" | "unauthenticated" | "error";
+  message: string;
+  tipKey?: string;
+  direction?: VoteDirection;
+  currentVote?: VoteDirection | null;
+  upvotes?: number;
+  downvotes?: number;
+}
 
 async function getCurrentUserId(): Promise<string | null> {
   try {
@@ -95,38 +109,159 @@ export async function createTipAction(formData: FormData) {
   }
 }
 
-export async function voteTipAction(formData: FormData) {
+export async function voteTipAction(formData: FormData): Promise<VoteActionResult> {
   try {
     const userId = await getCurrentUserId();
 
     if (!userId) {
-      return;
+      return {
+        ok: false,
+        status: "unauthenticated",
+        message: "Sign in to vote on tips.",
+      };
     }
 
     const tipId = String(formData.get("tipId") ?? "").trim();
     const direction = String(formData.get("direction") ?? "").trim();
 
     if (!tipId || (direction !== "upvote" && direction !== "downvote")) {
-      return;
+      return {
+        ok: false,
+        status: "invalid",
+        message: "Invalid vote request.",
+      };
     }
 
     const db = await getSurrealClient();
+    const userKey = stripTablePrefix(userId, "user");
+    const tipKey = stripTablePrefix(tipId, "tip");
 
-    if (direction === "upvote") {
-      await db.query(
-        `UPDATE type::thing("tip", $tip_id) SET upvotes += 1;`,
-        { tip_id: tipId },
-      );
-    } else {
-      await db.query(
-        `UPDATE type::thing("tip", $tip_id) SET downvotes += 1;`,
-        { tip_id: tipId },
-      );
+    if (!userKey || !tipKey || !isSafeRecordKey(userKey) || !isSafeRecordKey(tipKey)) {
+      return {
+        ok: false,
+        status: "invalid",
+        message: "Invalid vote target.",
+      };
     }
 
-    revalidatePath("/");
+    const userRecordId = `user:${userKey}`;
+    const tipRecordId = `tip:${tipKey}`;
+
+    const existingVoteRows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(
+        await db.query(
+          `
+            SELECT id, direction
+            FROM voted
+            WHERE in = ${userRecordId}
+              AND out = ${tipRecordId}
+            LIMIT 1;
+          `,
+        ),
+        0,
+      ),
+    );
+
+    const existingVote = existingVoteRows[0];
+    const existingDirection = String(existingVote?.direction ?? "");
+    const existingVoteId = toRecordId(existingVote?.id);
+    const existingVoteKey = stripTablePrefix(existingVoteId, "voted");
+    const voteRecordId =
+      existingVoteKey && isSafeRecordKey(existingVoteKey) ? `voted:${existingVoteKey}` : null;
+
+    if (!existingVote) {
+      if (direction === "upvote") {
+        await db.query(`UPDATE ${tipRecordId} SET upvotes += 1;`);
+      } else {
+        await db.query(`UPDATE ${tipRecordId} SET downvotes += 1;`);
+      }
+
+      await db.query(
+        `
+          RELATE ${userRecordId}->voted->${tipRecordId}
+          SET direction = $direction,
+              created_at = time::now(),
+              updated_at = time::now();
+        `,
+        { direction },
+      );
+    } else if (existingDirection === direction) {
+      if (direction === "upvote") {
+        await db.query(`UPDATE ${tipRecordId} SET upvotes -= 1;`);
+      } else {
+        await db.query(`UPDATE ${tipRecordId} SET downvotes -= 1;`);
+      }
+
+      if (voteRecordId) {
+        await db.query(`DELETE ${voteRecordId};`);
+      }
+    } else {
+      if (existingDirection === "upvote") {
+        await db.query(`UPDATE ${tipRecordId} SET upvotes -= 1;`);
+      } else if (existingDirection === "downvote") {
+        await db.query(`UPDATE ${tipRecordId} SET downvotes -= 1;`);
+      }
+
+      if (direction === "upvote") {
+        await db.query(`UPDATE ${tipRecordId} SET upvotes += 1;`);
+      } else {
+        await db.query(`UPDATE ${tipRecordId} SET downvotes += 1;`);
+      }
+
+      if (voteRecordId) {
+        await db.query(
+          `
+            UPDATE ${voteRecordId}
+            SET direction = $direction,
+                updated_at = time::now();
+          `,
+          { direction },
+        );
+      } else {
+        await db.query(
+          `
+            RELATE ${userRecordId}->voted->${tipRecordId}
+            SET direction = $direction,
+                created_at = time::now(),
+                updated_at = time::now();
+          `,
+          { direction },
+        );
+      }
+    }
+
+    const tipRows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(await db.query(`SELECT upvotes, downvotes FROM ${tipRecordId};`), 0),
+    );
+    const tipRow = tipRows[0] ?? {};
+
+    return {
+      ok: true,
+      status:
+        !existingVote
+          ? "applied"
+          : existingDirection === direction
+          ? "removed"
+          : "switched",
+      message:
+        !existingVote
+          ? "Vote recorded."
+          : existingDirection === direction
+          ? "Vote removed."
+          : "Vote updated.",
+      tipKey,
+      direction,
+      currentVote: !existingVote ? direction : existingDirection === direction ? null : direction,
+      upvotes: toSafeInt(tipRow.upvotes),
+      downvotes: toSafeInt(tipRow.downvotes),
+    };
   } catch (error) {
     console.error("voteTipAction failed", error);
+    return {
+      ok: false,
+      status: "error",
+      message: "Could not save vote right now. Try again.",
+    };
   }
 }
 

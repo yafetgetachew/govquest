@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, MessageCircleMore, ScanSearch, ThumbsDown, ThumbsUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircleMore } from "lucide-react";
 
-import { createTipAction, voteTipAction } from "@/app/actions";
+import {
+  createTipAction,
+  voteTipAction,
+  type VoteActionResult,
+  type VoteDirection,
+} from "@/app/actions";
 import {
   Accordion,
   AccordionContent,
@@ -293,7 +298,7 @@ function TaskAccordion({
                     <section className="space-y-3 border-t border-border/70 pt-3">
                       <div className="flex items-center gap-2 text-sm font-medium">
                         <MessageCircleMore className="h-4 w-4 text-primary" />
-                        Community Feed
+                        Tips
                       </div>
 
                       {canPostTip ? (
@@ -324,7 +329,7 @@ function TaskAccordion({
 
                       {tips.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                          No reports yet for this step. Be the first to help someone.
+                          No tips yet for this step. Be the first to help someone.
                         </p>
                       ) : (
                         <TipCarousel tips={tips} isAuthenticated={isAuthenticated} />
@@ -363,23 +368,25 @@ function TipCarousel({
   tips: TipView[];
   isAuthenticated: boolean;
 }) {
-  const rankedTips = useMemo(
-    () =>
-      [...tips].sort((a, b) => {
-        if (b.upvotes !== a.upvotes) {
-          return b.upvotes - a.upvotes;
-        }
-
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-
-        return b.createdAt.localeCompare(a.createdAt);
-      }),
-    [tips],
-  );
+  const [localTips, setLocalTips] = useState<TipView[]>(tips);
   const [activeTipIndex, setActiveTipIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalHighlightedTipId, setModalHighlightedTipId] = useState<string | null>(null);
+  const [voteFeedback, setVoteFeedback] = useState<{
+    message: string;
+    tone: "success" | "info" | "error";
+  } | null>(null);
+  const [votePulse, setVotePulse] = useState<{ tipKey: string; direction: VoteDirection } | null>(
+    null,
+  );
+
+  const rankedTips = useMemo(() => localTips, [localTips]);
+
+  useEffect(() => {
+    setLocalTips(tips);
+    setVoteFeedback(null);
+    setVotePulse(null);
+  }, [tips]);
 
   useEffect(() => {
     setActiveTipIndex(0);
@@ -392,7 +399,7 @@ function TipCarousel({
 
     const interval = window.setInterval(() => {
       setActiveTipIndex((previous) => (previous + 1) % rankedTips.length);
-    }, 5200);
+    }, 15000);
 
     return () => {
       window.clearInterval(interval);
@@ -409,13 +416,105 @@ function TipCarousel({
     setActiveTipIndex((previous) => (previous + 1) % rankedTips.length);
   };
 
+  const applyVoteResult = (result: VoteActionResult) => {
+    if (
+      result.ok &&
+      result.tipKey &&
+      typeof result.currentVote !== "undefined" &&
+      typeof result.upvotes === "number" &&
+      typeof result.downvotes === "number"
+    ) {
+      setLocalTips((previous) =>
+        previous.map((tip) =>
+          tip.key === result.tipKey
+            ? {
+                ...tip,
+                upvotes: result.upvotes as number,
+                downvotes: result.downvotes as number,
+                score: (result.upvotes as number) - (result.downvotes as number),
+                viewerVote: result.currentVote ?? null,
+              }
+            : tip,
+        ),
+      );
+    }
+
+    if (result.ok && result.tipKey && result.direction) {
+      setVotePulse({
+        tipKey: result.tipKey,
+        direction: result.direction,
+      });
+
+      window.setTimeout(() => {
+        setVotePulse((current) =>
+          current &&
+          current.tipKey === result.tipKey &&
+          current.direction === result.direction
+            ? null
+            : current,
+        );
+      }, 260);
+    }
+
+    setVoteFeedback({
+      message: result.message,
+      tone: !result.ok ? "error" : result.status === "removed" ? "info" : "success",
+    });
+  };
+
+  const submitVote = async (formData: FormData) => {
+    const result = await voteTipAction(formData);
+    applyVoteResult(result);
+  };
+
+  useEffect(() => {
+    if (!voteFeedback) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setVoteFeedback(null);
+    }, 3200);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [voteFeedback]);
+
+  const openTipsModal = () => {
+    if (!activeTip) {
+      return;
+    }
+
+    setModalHighlightedTipId(activeTip.id);
+    setModalOpen(true);
+  };
+
+  const voteButtonClassName = (tip: TipView, direction: VoteDirection) =>
+    cn(
+      "h-8 px-2",
+      direction === "upvote" &&
+        tip.viewerVote === "upvote" &&
+        "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+      direction === "downvote" &&
+        tip.viewerVote === "downvote" &&
+        "bg-red-500/12 text-red-700 dark:text-red-300",
+      votePulse?.tipKey === tip.key &&
+        votePulse.direction === direction &&
+        "animate-[gvt-vote-pop_220ms_ease-out]",
+    );
+
+  if (!activeTip) {
+    return null;
+  }
+
   return (
     <div className="space-y-3">
       <button
         type="button"
-        onClick={() => setModalOpen(true)}
+        onClick={openTipsModal}
         className="block w-full border border-border/80 bg-background/40 p-3 text-left transition-colors hover:bg-muted/20"
-        title="Open magnifier view"
+        title="Open tips"
       >
         <div key={activeTip.id} className="animate-[gvt-tip-slide_380ms_ease-out] space-y-2">
           <p className="text-sm leading-relaxed">{activeTip.content}</p>
@@ -423,10 +522,7 @@ function TipCarousel({
             <p className="text-xs text-muted-foreground">
               Top by upvotes · {activeTipIndex + 1}/{rankedTips.length}
             </p>
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <ScanSearch className="h-3.5 w-3.5" />
-              Magnifier
-            </span>
+            <span className="text-xs text-muted-foreground">Tips</span>
           </div>
         </div>
       </button>
@@ -462,69 +558,130 @@ function TipCarousel({
           ) : null}
           {isAuthenticated ? (
             <>
-              <form action={voteTipAction}>
+              <form action={submitVote}>
                 <input type="hidden" name="tipId" value={activeTip.key} />
                 <input type="hidden" name="direction" value="upvote" />
                 <Button
                   type="submit"
                   size="sm"
                   variant="ghost"
-                  className="h-8 px-2"
+                  className={voteButtonClassName(activeTip, "upvote")}
                 >
-                  <ThumbsUp className="h-4 w-4" />
-                  {activeTip.upvotes}
+                  ↑ {activeTip.upvotes}
                 </Button>
               </form>
-              <form action={voteTipAction}>
+              <form action={submitVote}>
                 <input type="hidden" name="tipId" value={activeTip.key} />
                 <input type="hidden" name="direction" value="downvote" />
                 <Button
                   type="submit"
                   size="sm"
                   variant="ghost"
-                  className="h-8 px-2"
+                  className={voteButtonClassName(activeTip, "downvote")}
                 >
-                  <ThumbsDown className="h-4 w-4" />
-                  {activeTip.downvotes}
+                  ↓ {activeTip.downvotes}
                 </Button>
               </form>
             </>
           ) : null}
         </div>
       </div>
+      <VoteToast feedback={voteFeedback} />
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <Dialog
+        open={modalOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setModalHighlightedTipId(activeTip.id);
+          }
+
+          setModalOpen(open);
+        }}
+      >
         <DialogContent className="max-h-[80vh] max-w-2xl p-0">
           <DialogHeader className="border-b border-border p-4">
-            <DialogTitle>Community Feed Magnifier</DialogTitle>
-            <DialogDescription>
-              Browse all tips for this task in ranking order.
-            </DialogDescription>
+            <DialogTitle>Tips</DialogTitle>
+            <DialogDescription>Ranked by upvotes and recency.</DialogDescription>
           </DialogHeader>
           <div className="max-h-[65vh] overflow-y-auto p-4">
             <div className="space-y-2">
-              {rankedTips.map((tip, index) => (
-                <button
+              {rankedTips.map((tip) => (
+                <div
                   key={tip.id}
-                  type="button"
-                  onClick={() => setActiveTipIndex(index)}
                   className={cn(
-                    "w-full border p-3 text-left transition-colors",
-                    index === activeTipIndex
+                    "w-full border p-3 text-left",
+                    tip.id === modalHighlightedTipId
                       ? "border-primary/35 bg-primary/5"
-                      : "border-border/70 bg-background/30 hover:bg-muted/25",
+                      : "border-border/70 bg-background/30",
                   )}
                 >
-                  <p className="text-sm leading-relaxed">{tip.content}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {tip.upvotes} upvotes · Score {tip.score} · {formatDate(tip.createdAt)}
-                  </p>
-                </button>
+                  <div>
+                    <p className="text-sm leading-relaxed">{tip.content}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {tip.upvotes} upvotes · Score {tip.score} · {formatDate(tip.createdAt)}
+                    </p>
+                  </div>
+                  {isAuthenticated ? (
+                    <div className="mt-2 flex items-center gap-1">
+                      <form action={submitVote}>
+                        <input type="hidden" name="tipId" value={tip.key} />
+                        <input type="hidden" name="direction" value="upvote" />
+                        <Button
+                          type="submit"
+                          size="sm"
+                          variant="ghost"
+                          className={voteButtonClassName(tip, "upvote")}
+                        >
+                          ↑ {tip.upvotes}
+                        </Button>
+                      </form>
+                      <form action={submitVote}>
+                        <input type="hidden" name="tipId" value={tip.key} />
+                        <input type="hidden" name="direction" value="downvote" />
+                        <Button
+                          type="submit"
+                          size="sm"
+                          variant="ghost"
+                          className={voteButtonClassName(tip, "downvote")}
+                        >
+                          ↓ {tip.downvotes}
+                        </Button>
+                      </form>
+                    </div>
+                  ) : null}
+                </div>
               ))}
             </div>
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function VoteToast({
+  feedback,
+}: {
+  feedback: { message: string; tone: "success" | "info" | "error" } | null;
+}) {
+  if (!feedback) {
+    return null;
+  }
+
+  return (
+    <div className="pointer-events-none fixed bottom-5 right-5 z-[80]">
+      <div
+        role="status"
+        className={cn(
+          "min-w-[180px] border bg-card/95 px-3 py-2 text-xs shadow-sm backdrop-blur-sm",
+          feedback.tone === "success" && "border-emerald-500/45 text-emerald-700 dark:text-emerald-300",
+          feedback.tone === "info" && "border-border text-foreground",
+          feedback.tone === "error" && "border-red-500/45 text-red-700 dark:text-red-300",
+          "animate-[gvt-toast-in_160ms_ease-out]",
+        )}
+      >
+        {feedback.message}
+      </div>
     </div>
   );
 }

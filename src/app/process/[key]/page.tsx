@@ -71,7 +71,8 @@ export default async function ProcessPage({
     );
   }
 
-  const tipsByTask = isAuthenticated ? await getTipsByTask(taskKeys) : {};
+  const tipsByTask = isAuthenticated ? await getTipsByTask(taskKeys, session?.user?.id ?? null) : {};
+  const taskFlow = summarizeTaskFlow(tasks);
 
   return (
     <main className="space-y-6 pb-10">
@@ -87,7 +88,23 @@ export default async function ProcessPage({
           <div className="space-y-2">
             <h2 className="text-3xl font-semibold tracking-tight text-foreground">{process.title}</h2>
             <p className="max-w-3xl text-sm text-muted-foreground">{process.summary}</p>
-            <p className="max-w-4xl text-xs text-muted-foreground">{summarizeTaskFlow(tasks)}</p>
+            {taskFlow.titles.length === 0 ? (
+              <p className="max-w-4xl text-xs text-muted-foreground">No task summary available yet.</p>
+            ) : (
+              <div className="flex max-w-4xl flex-wrap items-center gap-2 text-xs">
+                {taskFlow.titles.map((title, index) => (
+                  <span key={`${title}-${index}`} className="inline-flex items-center gap-2">
+                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-1 font-medium text-primary">
+                      {title}
+                    </span>
+                    {index < taskFlow.titles.length - 1 || taskFlow.truncated ? (
+                      <span className="text-muted-foreground">→</span>
+                    ) : null}
+                  </span>
+                ))}
+                {taskFlow.truncated ? <span className="text-muted-foreground">…</span> : null}
+              </div>
+            )}
           </div>
           {isAuthenticated ? <QuestModeToggleButton processKey={process.key} /> : null}
         </div>
@@ -103,21 +120,17 @@ export default async function ProcessPage({
   );
 }
 
-function summarizeTaskFlow(tasks: TaskNode[]): string {
+function summarizeTaskFlow(tasks: TaskNode[]): { titles: string[]; truncated: boolean } {
   const titles = tasks
     .map((task) => task.title.trim())
     .filter((title) => title.length > 0);
 
   if (titles.length === 0) {
-    return "No task summary available yet.";
+    return { titles: [], truncated: false };
   }
 
-  const visibleTitles = titles.slice(0, 8);
-  const summary = visibleTitles.join(" -> ");
-
-  if (titles.length > visibleTitles.length) {
-    return `${summary} -> ...`;
-  }
-
-  return summary;
+  return {
+    titles: titles.slice(0, 8),
+    truncated: titles.length > 8,
+  };
 }

@@ -5,7 +5,9 @@ import type { Surreal } from "surrealdb";
 import { getSurrealClient } from "@/lib/surreal";
 import {
   asArray,
+  isSafeRecordKey,
   queryResult,
+  stripTablePrefix,
   toRecordId,
   toRecordKey,
   toSafeInt,
@@ -206,9 +208,15 @@ async function buildTaskNode(
   };
 }
 
-export async function getTipsByTask(taskKeys: string[]): Promise<TipsByTask> {
+export async function getTipsByTask(
+  taskKeys: string[],
+  viewerUserId?: string | null,
+): Promise<TipsByTask> {
   try {
     const db = await getSurrealClient();
+    const viewerUserKey = viewerUserId ? stripTablePrefix(viewerUserId, "user") : null;
+    const hasSafeViewer =
+      typeof viewerUserKey === "string" && viewerUserKey.length > 0 && isSafeRecordKey(viewerUserKey);
 
     if (taskKeys.length === 0) {
       return {};
@@ -235,17 +243,55 @@ export async function getTipsByTask(taskKeys: string[]): Promise<TipsByTask> {
           ),
         );
 
+        const viewerVoteByTipKey = new Map<string, "upvote" | "downvote">();
+
+        if (hasSafeViewer) {
+          const voteRows = asArray<Record<string, unknown>>(
+            queryResult<unknown>(
+              await db.query(
+                `
+                  SELECT out, direction
+                  FROM voted
+                  WHERE in = user:${viewerUserKey}
+                    AND out IN (
+                      SELECT VALUE out
+                      FROM posted
+                      WHERE task_id = type::thing("task", $task_id)
+                    );
+                `,
+                { task_id: taskKey },
+              ),
+              0,
+            ),
+          );
+
+          for (const voteRow of voteRows) {
+            const votedTipId = toRecordId(voteRow.out);
+            const votedTipKey = toRecordKey(votedTipId);
+            const direction = String(voteRow.direction ?? "");
+
+            if (
+              votedTipKey &&
+              (direction === "upvote" || direction === "downvote")
+            ) {
+              viewerVoteByTipKey.set(votedTipKey, direction);
+            }
+          }
+        }
+
         const tips: TipView[] = tipsRows.map((tipRow) => {
           const id = toRecordId(tipRow.id);
+          const tipKey = toRecordKey(id);
 
           return {
             id,
-            key: toRecordKey(id),
+            key: tipKey,
             content: String(tipRow.content ?? ""),
             upvotes: toSafeInt(tipRow.upvotes),
             downvotes: toSafeInt(tipRow.downvotes),
             score: toSafeInt(tipRow.score),
             createdAt: String(tipRow.created_at ?? ""),
+            viewerVote: viewerVoteByTipKey.get(tipKey) ?? null,
           };
         });
 
