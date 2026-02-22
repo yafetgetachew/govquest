@@ -43,9 +43,10 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 "${DEPLOY_USER}@${DEPLOY_HOST}" "bash -s" <<EOF
           set -euo pipefail
           cd "${DEPLOY_DIR}"
-          git fetch origin "${DEPLOY_BRANCH}"
-          git checkout "${DEPLOY_BRANCH}"
-          git pull --ff-only origin "${DEPLOY_BRANCH}"
+          # Ensure deploy is deterministic even if tracked files were edited on server.
+          git fetch --prune origin "${DEPLOY_BRANCH}"
+          git checkout -f "${DEPLOY_BRANCH}"
+          git reset --hard "origin/${DEPLOY_BRANCH}"
           docker compose up -d --build
           docker image prune -f
           EOF
