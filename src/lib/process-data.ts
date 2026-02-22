@@ -24,6 +24,14 @@ import type {
 } from "@/lib/types";
 
 const MAX_TASK_DEPTH = 8;
+const PROCESS_CATALOG_CACHE_TTL_MS = 60_000;
+const PROCESS_TREE_CACHE_TTL_MS = 60_000;
+const PROCESS_DEPENDENCY_CACHE_TTL_MS = 120_000;
+
+interface TimedCacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
 
 interface ProcessTreePayload {
   process: ProcessNode | null;
@@ -39,6 +47,38 @@ interface ProcessCatalogPayload {
 
 export interface ProcessDependencyStats {
   requiredByProcessCount: number;
+}
+
+interface ProcessDataCacheStore {
+  catalog?: TimedCacheEntry<ProcessCatalogPayload>;
+  processTrees: Record<string, TimedCacheEntry<ProcessTreePayload>>;
+  dependencyCounts?: TimedCacheEntry<Record<string, number>>;
+}
+
+declare global {
+  var govquestProcessDataCache: ProcessDataCacheStore | undefined;
+}
+
+function getProcessDataCacheStore(): ProcessDataCacheStore {
+  if (!global.govquestProcessDataCache) {
+    global.govquestProcessDataCache = {
+      processTrees: {},
+    };
+  }
+
+  return global.govquestProcessDataCache;
+}
+
+function getFreshCacheValue<T>(entry?: TimedCacheEntry<T>): T | null {
+  if (!entry) {
+    return null;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    return null;
+  }
+
+  return entry.value;
 }
 
 const INFERRED_DOCUMENT_RULES: Array<{
@@ -73,6 +113,12 @@ const INFERRED_DOCUMENT_RULES: Array<{
 ];
 
 export async function getProcessCatalog(): Promise<ProcessCatalogPayload> {
+  const cacheStore = getProcessDataCacheStore();
+  const cached = getFreshCacheValue(cacheStore.catalog);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const db = await getSurrealClient();
 
@@ -130,10 +176,16 @@ export async function getProcessCatalog(): Promise<ProcessCatalogPayload> {
       return left.title.localeCompare(right.title);
     });
 
-    return {
+    const payload: ProcessCatalogPayload = {
       processes,
       connectionError: null,
     };
+    cacheStore.catalog = {
+      value: payload,
+      expiresAt: Date.now() + PROCESS_CATALOG_CACHE_TTL_MS,
+    };
+
+    return payload;
   } catch (error) {
     return {
       processes: [],
@@ -143,6 +195,13 @@ export async function getProcessCatalog(): Promise<ProcessCatalogPayload> {
 }
 
 export async function getProcessTaskTree(processKey: string): Promise<ProcessTreePayload> {
+  const cacheStore = getProcessDataCacheStore();
+  const cacheKey = processKey.trim();
+  const cached = getFreshCacheValue(cacheStore.processTrees[cacheKey]);
+  if (cached) {
+    return cached;
+  }
+
   try {
     if (!isSafeRecordKey(processKey)) {
       return { process: null, tasks: [], taskKeys: [], connectionError: null };
@@ -182,12 +241,18 @@ export async function getProcessTaskTree(processKey: string): Promise<ProcessTre
       topLevelTasks.map((taskRow) => buildTaskNode(db, taskRow, 0, visited)),
     );
 
-    return {
+    const payload: ProcessTreePayload = {
       process,
       tasks,
       taskKeys: collectTaskKeys(tasks),
       connectionError: null,
     };
+    cacheStore.processTrees[cacheKey] = {
+      value: payload,
+      expiresAt: Date.now() + PROCESS_TREE_CACHE_TTL_MS,
+    };
+
+    return payload;
   } catch (error) {
     return {
       process: null,
@@ -329,93 +394,136 @@ export async function getTipsByTask(
   viewerUserId?: string | null,
 ): Promise<TipsByTask> {
   try {
+    if (taskKeys.length === 0) {
+      return {};
+    }
+
     const db = await getSurrealClient();
     const viewerUserKey = viewerUserId ? stripTablePrefix(viewerUserId, "user") : null;
     const hasSafeViewer =
       typeof viewerUserKey === "string" && viewerUserKey.length > 0 && isSafeRecordKey(viewerUserKey);
 
-    if (taskKeys.length === 0) {
-      return {};
+    const safeTaskKeys = taskKeys.filter((taskKey) => isSafeRecordKey(taskKey));
+    const tipsByTask: TipsByTask = Object.fromEntries(taskKeys.map((taskKey) => [taskKey, []]));
+
+    if (safeTaskKeys.length === 0) {
+      return tipsByTask;
     }
 
-    const entries = await Promise.all(
-      taskKeys.map(async (taskKey) => {
-        const tipsRows = asArray<Record<string, unknown>>(
-          queryResult<unknown>(
-            await db.query(
-              `
-                SELECT *, (upvotes - downvotes) AS score
-                FROM tip
-                WHERE id IN (
-                  SELECT VALUE out
-                  FROM posted
-                  WHERE task_id = type::thing("task", $task_id)
-                )
-                ORDER BY score DESC, created_at DESC;
-              `,
-              { task_id: taskKey },
-            ),
-            0,
-          ),
-        );
-
-        const viewerVoteByTipKey = new Map<string, "upvote" | "downvote">();
-
-        if (hasSafeViewer) {
-          const voteRows = asArray<Record<string, unknown>>(
-            queryResult<unknown>(
-              await db.query(
-                `
-                  SELECT out, direction
-                  FROM voted
-                  WHERE in = user:${viewerUserKey}
-                    AND out IN (
-                      SELECT VALUE out
-                      FROM posted
-                      WHERE task_id = type::thing("task", $task_id)
-                    );
-                `,
-                { task_id: taskKey },
-              ),
-              0,
-            ),
-          );
-
-          for (const voteRow of voteRows) {
-            const votedTipId = toRecordId(voteRow.out);
-            const votedTipKey = toRecordKey(votedTipId);
-            const direction = String(voteRow.direction ?? "");
-
-            if (
-              votedTipKey &&
-              (direction === "upvote" || direction === "downvote")
-            ) {
-              viewerVoteByTipKey.set(votedTipKey, direction);
-            }
-          }
-        }
-
-        const tips: TipView[] = tipsRows.map((tipRow) => {
-          const id = toRecordId(tipRow.id);
-          const tipKey = toRecordKey(id);
-
-          return {
-            id,
-            key: tipKey,
-            content: String(tipRow.content ?? ""),
-            upvotes: toSafeInt(tipRow.upvotes),
-            downvotes: toSafeInt(tipRow.downvotes),
-            score: toSafeInt(tipRow.score),
-            createdAt: String(tipRow.created_at ?? ""),
-            viewerVote: viewerVoteByTipKey.get(tipKey) ?? null,
-          };
-        });
-
-        return [taskKey, tips] as const;
-      }),
+    const taskRecordIds = safeTaskKeys.map((taskKey) => `task:${taskKey}`).join(", ");
+    const postedRows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(
+        await db.query(
+          `
+            SELECT out AS tip, task_id
+            FROM posted
+            WHERE task_id IN [${taskRecordIds}];
+          `,
+        ),
+        0,
+      ),
     );
 
-    return Object.fromEntries(entries);
+    if (postedRows.length === 0) {
+      return tipsByTask;
+    }
+
+    const tipIds = new Set<string>();
+    const taskKeyByTipId = new Map<string, string>();
+
+    for (const row of postedRows) {
+      const tipId = toRecordId(row.tip);
+      const taskId = toRecordId(row.task_id);
+      const taskKey = toRecordKey(taskId);
+
+      if (!tipId || !taskKey || !isSafeRecordKey(taskKey)) {
+        continue;
+      }
+
+      tipIds.add(tipId);
+      if (!taskKeyByTipId.has(tipId)) {
+        taskKeyByTipId.set(tipId, taskKey);
+      }
+    }
+
+    if (tipIds.size === 0) {
+      return tipsByTask;
+    }
+
+    const tipIdList = Array.from(tipIds).join(", ");
+    const tipsRows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(
+        await db.query(
+          `
+            SELECT *, (upvotes - downvotes) AS score
+            FROM tip
+            WHERE id IN [${tipIdList}]
+            ORDER BY score DESC, created_at DESC;
+          `,
+        ),
+        0,
+      ),
+    );
+
+    const viewerVoteByTipKey = new Map<string, "upvote" | "downvote">();
+    if (hasSafeViewer) {
+      const voteRows = asArray<Record<string, unknown>>(
+        queryResult<unknown>(
+          await db.query(
+            `
+              SELECT out, direction
+              FROM voted
+              WHERE in = user:${viewerUserKey}
+                AND out IN [${tipIdList}];
+            `,
+          ),
+          0,
+        ),
+      );
+
+      for (const voteRow of voteRows) {
+        const votedTipId = toRecordId(voteRow.out);
+        const votedTipKey = toRecordKey(votedTipId);
+        const direction = String(voteRow.direction ?? "");
+
+        if (votedTipKey && (direction === "upvote" || direction === "downvote")) {
+          viewerVoteByTipKey.set(votedTipKey, direction);
+        }
+      }
+    }
+
+    for (const tipRow of tipsRows) {
+      const id = toRecordId(tipRow.id);
+      const tipKey = toRecordKey(id);
+      const taskKey = taskKeyByTipId.get(id);
+
+      if (!taskKey || !tipsByTask[taskKey]) {
+        continue;
+      }
+
+      tipsByTask[taskKey].push({
+        id,
+        key: tipKey,
+        content: String(tipRow.content ?? ""),
+        upvotes: toSafeInt(tipRow.upvotes),
+        downvotes: toSafeInt(tipRow.downvotes),
+        score: toSafeInt(tipRow.score),
+        createdAt: String(tipRow.created_at ?? ""),
+        viewerVote: viewerVoteByTipKey.get(tipKey) ?? null,
+      });
+    }
+
+    for (const taskKey of Object.keys(tipsByTask)) {
+      tipsByTask[taskKey].sort((left, right) => {
+        if (left.score !== right.score) {
+          return right.score - left.score;
+        }
+
+        return right.createdAt.localeCompare(left.createdAt);
+      });
+    }
+
+    return tipsByTask;
   } catch {
     return {};
   }
@@ -429,12 +537,20 @@ export async function getProcessDependencyStats(
       return { requiredByProcessCount: 0 };
     }
 
+    const cacheStore = getProcessDataCacheStore();
+    const cachedCounts = getFreshCacheValue(cacheStore.dependencyCounts);
+    if (cachedCounts) {
+      return {
+        requiredByProcessCount: cachedCounts[targetProcessKey] ?? 0,
+      };
+    }
+
     const db = await getSurrealClient();
     const taskRows = asArray<Record<string, unknown>>(
       queryResult<unknown>(await db.query("SELECT id, title, description, required_documents FROM task;"), 0),
     );
 
-    const requiringProcessKeys = new Set<string>();
+    const requiringProcessKeysByTarget = new Map<string, Set<string>>();
 
     for (const taskRow of taskRows) {
       const taskId = toRecordId(taskRow.id);
@@ -453,17 +569,31 @@ export async function getProcessDependencyStats(
           ownerProcessKey,
         ),
       );
-      const referencesTarget = requiredDocuments.some(
-        (document) => document.processKey === targetProcessKey,
-      );
+      for (const document of requiredDocuments) {
+        if (!document.processKey || !isSafeRecordKey(document.processKey)) {
+          continue;
+        }
 
-      if (referencesTarget) {
-        requiringProcessKeys.add(ownerProcessKey);
+        if (!requiringProcessKeysByTarget.has(document.processKey)) {
+          requiringProcessKeysByTarget.set(document.processKey, new Set<string>());
+        }
+
+        requiringProcessKeysByTarget.get(document.processKey)?.add(ownerProcessKey);
       }
     }
 
+    const dependencyCounts: Record<string, number> = {};
+    for (const [targetKey, requiringProcessKeys] of requiringProcessKeysByTarget.entries()) {
+      dependencyCounts[targetKey] = requiringProcessKeys.size;
+    }
+
+    cacheStore.dependencyCounts = {
+      value: dependencyCounts,
+      expiresAt: Date.now() + PROCESS_DEPENDENCY_CACHE_TTL_MS,
+    };
+
     return {
-      requiredByProcessCount: requiringProcessKeys.size,
+      requiredByProcessCount: dependencyCounts[targetProcessKey] ?? 0,
     };
   } catch {
     return {

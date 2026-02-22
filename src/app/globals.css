@@ -25,17 +25,17 @@
 }
 
 :root {
-  --background: 42 36% 96%;
+  --background: 44 46% 93%;
   --foreground: 214 24% 20%;
 
-  --card: 0 0% 100%;
+  --card: 44 40% 96%;
   --card-foreground: 214 26% 20%;
 
-  --muted: 40 24% 91%;
+  --muted: 42 30% 88%;
   --muted-foreground: 214 15% 40%;
 
-  --border: 209 20% 84%;
-  --input: 209 20% 84%;
+  --border: 36 18% 79%;
+  --input: 36 18% 79%;
   --ring: 167 56% 42%;
 
   --primary: 167 55% 37%;
@@ -365,6 +365,19 @@
       -webkit-text-fill-color: transparent;
       color: transparent;
       text-shadow: none;
+    }
+
+    :root:not(.dark) .gvt-wordmark {
+      background-image:
+        linear-gradient(
+          0deg,
+          hsl(var(--foreground) / 0.16),
+          hsl(var(--foreground) / 0.16)
+        ),
+        url("/govquest-wordmark-art.jpg");
+      background-blend-mode: multiply;
+      -webkit-text-stroke: 0.28px hsl(var(--foreground) / 0.14);
+      text-shadow: 0 1px 0 hsl(var(--background) / 0.35);
     }
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
 import { TransitionLink } from "@/components/ui/transition-link";
@@ -9,6 +10,7 @@ import { authClient, useSession } from "@/lib/auth-client";
 
 export function SessionControls() {
   const { data: session, isPending } = useSession();
+  const router = useRouter();
 
   if (isPending) {
     return <div className="h-9 w-32 border border-border/60" />;
@@ -47,7 +49,8 @@ export function SessionControls() {
           await authClient.signOut({
             fetchOptions: {
               onSuccess: () => {
-                window.location.reload();
+                router.push("/");
+                router.refresh();
               },
             },
           });

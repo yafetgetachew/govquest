@@ -49,7 +49,6 @@ export function SignUpForm() {
             }
 
             router.push("/");
-            router.refresh();
           }}
         >
           <div className="space-y-2">

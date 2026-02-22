@@ -27,13 +27,11 @@ export function AppHeader() {
     }
 
     if (!snapshot) {
-      animateWordmarkSettle(target);
       return;
     }
 
     if (Date.now() - snapshot.at > 45000) {
       clearWordmarkTransitionSnapshot();
-      animateWordmarkSettle(target);
       return;
     }
 

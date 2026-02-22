@@ -55,7 +55,6 @@ export function SignInForm() {
             }
 
             router.push("/");
-            router.refresh();
           }}
         >
           <div className="space-y-2">
@@ -120,7 +119,6 @@ export function SignInForm() {
 
               setTestUserPending(false);
               router.push("/");
-              router.refresh();
             } catch (err) {
               const message =
                 err instanceof Error ? err.message : "Unable to sign in with test account.";

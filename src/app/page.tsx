@@ -2,7 +2,7 @@ import { ProcessCatalog } from "@/components/process/process-catalog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProcessCatalog } from "@/lib/process-data";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export default async function HomePage() {
   const { processes, connectionError } = await getProcessCatalog();
