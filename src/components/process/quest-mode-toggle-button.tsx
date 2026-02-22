@@ -32,11 +32,16 @@ export function QuestModeToggleButton({
   );
   const [isPending, startTransition] = useTransition();
   const [isCompleted, setIsCompleted] = useState(initialCompleted);
+  const [actionError, setActionError] = useState<string | null>(null);
   const userScope = useMemo(() => toUserScope(userId), [userId]);
 
   useEffect(() => {
     setIsCompleted(initialCompleted);
   }, [initialCompleted, processKey, userScope]);
+
+  useEffect(() => {
+    setActionError(null);
+  }, [processKey, userScope]);
 
   useEffect(() => {
     const onProgressChanged = (event: Event) => {
@@ -80,43 +85,75 @@ export function QuestModeToggleButton({
       : "Reset all task statuses and start this process again";
 
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant={started ? "ghost" : "default"}
-      disabled={isPending}
-      onClick={() => {
-        if (action === "start") {
-          setQuestMode(true);
-          startTransition(async () => {
-            await setQuestModeAction(processKey, { started: true, resetProgress: false });
-          });
-          return;
-        }
+    <div className="space-y-2">
+      <Button
+        type="button"
+        size="sm"
+        variant={started ? "ghost" : "default"}
+        disabled={isPending}
+        onClick={() => {
+          setActionError(null);
 
-        if (action === "cancel") {
-          setQuestMode(false);
-          setIsCompleted(false);
-          startTransition(async () => {
-            await setQuestModeAction(processKey, { started: false, resetProgress: true });
-          });
-          return;
-        }
+          if (action === "start") {
+            startTransition(async () => {
+              const result = await setQuestModeAction(processKey, {
+                started: true,
+                resetProgress: false,
+              });
 
-        if (action === "reinitialize") {
-          reinitiateQuestMode();
-          setIsCompleted(false);
-          startTransition(async () => {
-            await setQuestModeAction(processKey, { started: true, resetProgress: true });
-          });
-        }
-      }}
-      title={title}
-    >
-      {action === "start" ? <Play className="h-4 w-4" /> : null}
-      {action === "cancel" ? <X className="h-4 w-4" /> : null}
-      {action === "reinitialize" ? <RotateCcw className="h-4 w-4" /> : null}
-      {label}
-    </Button>
+              if (result.ok) {
+                setQuestMode(true);
+                return;
+              }
+
+              setActionError(result.message ?? "Unable to start this process right now.");
+            });
+            return;
+          }
+
+          if (action === "cancel") {
+            startTransition(async () => {
+              const result = await setQuestModeAction(processKey, {
+                started: false,
+                resetProgress: true,
+              });
+
+              if (result.ok) {
+                setQuestMode(false);
+                setIsCompleted(false);
+                return;
+              }
+
+              setActionError(result.message ?? "Unable to cancel this process right now.");
+            });
+            return;
+          }
+
+          if (action === "reinitialize") {
+            startTransition(async () => {
+              const result = await setQuestModeAction(processKey, {
+                started: true,
+                resetProgress: true,
+              });
+
+              if (result.ok) {
+                reinitiateQuestMode();
+                setIsCompleted(false);
+                return;
+              }
+
+              setActionError(result.message ?? "Unable to reinitialize this process right now.");
+            });
+          }
+        }}
+        title={title}
+      >
+        {action === "start" ? <Play className="h-4 w-4" /> : null}
+        {action === "cancel" ? <X className="h-4 w-4" /> : null}
+        {action === "reinitialize" ? <RotateCcw className="h-4 w-4" /> : null}
+        {label}
+      </Button>
+      {actionError ? <p className="text-xs text-destructive">{actionError}</p> : null}
+    </div>
   );
 }

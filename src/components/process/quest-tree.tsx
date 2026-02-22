@@ -82,6 +82,9 @@ export function QuestTree({
   );
   const completedAtRef = useRef<string | undefined>(undefined);
   const syncStateFingerprintRef = useRef<string>("");
+  const syncInFlightFingerprintRef = useRef<string | null>(null);
+  const [syncRetryTick, setSyncRetryTick] = useState(0);
+  const [syncWarning, setSyncWarning] = useState<string | null>(null);
   const taskStateByKey = useMemo(
     () => computeEffectiveTaskStateByKey(tasks, manualTaskStateByKey),
     [tasks, manualTaskStateByKey],
@@ -95,6 +98,13 @@ export function QuestTree({
 
     setManualTaskStateByKey(normalizedInitialManualTaskStateByKey);
   }, [normalizedInitialManualTaskStateByKey, readOnly]);
+
+  useEffect(() => {
+    syncStateFingerprintRef.current = "";
+    syncInFlightFingerprintRef.current = null;
+    setSyncRetryTick(0);
+    setSyncWarning(null);
+  }, [processKey, userScope]);
 
   const resolvedCount = useMemo(
     () =>
@@ -187,6 +197,7 @@ export function QuestTree({
 
   useEffect(() => {
     if (readOnly || !isAuthenticated || !userId) {
+      syncInFlightFingerprintRef.current = null;
       return;
     }
 
@@ -203,21 +214,65 @@ export function QuestTree({
     };
     const fingerprint = JSON.stringify(syncPayload);
 
-    if (syncStateFingerprintRef.current === fingerprint) {
+    if (
+      syncStateFingerprintRef.current === fingerprint ||
+      syncInFlightFingerprintRef.current === fingerprint
+    ) {
       return;
     }
 
+    let isCancelled = false;
+    let retryTimeout: number | undefined;
     const timeout = window.setTimeout(() => {
-      syncStateFingerprintRef.current = fingerprint;
-      void syncQuestProgressAction(syncPayload).then((result) => {
-        if (result.ok && result.completedAt) {
-          completedAtRef.current = result.completedAt;
-        }
-      });
+      syncInFlightFingerprintRef.current = fingerprint;
+      void syncQuestProgressAction(syncPayload)
+        .then((result) => {
+          if (isCancelled) {
+            return;
+          }
+
+          syncInFlightFingerprintRef.current = null;
+
+          if (!result.ok) {
+            syncStateFingerprintRef.current = "";
+            if (result.status === "unauthenticated") {
+              setSyncWarning("Session expired. Sign in again to sync progress.");
+              return;
+            }
+
+            setSyncWarning("Could not sync progress yet. Retrying...");
+            retryTimeout = window.setTimeout(() => {
+              setSyncRetryTick((previous) => previous + 1);
+            }, 1500);
+            return;
+          }
+
+          syncStateFingerprintRef.current = fingerprint;
+          setSyncWarning(null);
+          if (result.completedAt) {
+            completedAtRef.current = result.completedAt;
+          }
+        })
+        .catch(() => {
+          if (isCancelled) {
+            return;
+          }
+
+          syncInFlightFingerprintRef.current = null;
+          syncStateFingerprintRef.current = "";
+          setSyncWarning("Could not sync progress yet. Retrying...");
+          retryTimeout = window.setTimeout(() => {
+            setSyncRetryTick((previous) => previous + 1);
+          }, 1500);
+        });
     }, 300);
 
     return () => {
+      isCancelled = true;
       window.clearTimeout(timeout);
+      if (retryTimeout !== undefined) {
+        window.clearTimeout(retryTimeout);
+      }
     };
   }, [
     completedCount,
@@ -229,6 +284,7 @@ export function QuestTree({
     progressPercent,
     readOnly,
     resolvedCount,
+    syncRetryTick,
     totalCount,
     userId,
   ]);
@@ -279,6 +335,7 @@ export function QuestTree({
         <p className="text-xs text-muted-foreground">
           {resolvedCount}/{totalCount} resolved · {completionText}/{totalCount} completion points
         </p>
+        {syncWarning ? <p className="text-xs text-destructive">{syncWarning}</p> : null}
       </div>
 
       <TaskAccordion

@@ -124,6 +124,23 @@ function toFiniteNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toValidDate(value: unknown): Date | null {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value;
+  }
+
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed;
+}
+
 function sanitizeTaskStateMap(value: unknown): Record<string, TaskState> {
   if (!value || typeof value !== "object") {
     return {};
@@ -153,6 +170,8 @@ function sanitizeTaskStateMap(value: unknown): Record<string, TaskState> {
 
 interface SetQuestModeResult {
   ok: boolean;
+  status: "applied" | "unauthenticated" | "invalid" | "error";
+  message?: string;
 }
 
 export async function setQuestModeAction(
@@ -165,7 +184,11 @@ export async function setQuestModeAction(
   try {
     const userId = await getCurrentUserId();
     if (!userId) {
-      return { ok: false };
+      return {
+        ok: false,
+        status: "unauthenticated",
+        message: "Sign in to track process progress.",
+      };
     }
 
     const userKey = stripTablePrefix(userId, "user");
@@ -177,7 +200,11 @@ export async function setQuestModeAction(
       !isSafeRecordKey(userKey) ||
       !isSafeRecordKey(processKey)
     ) {
-      return { ok: false };
+      return {
+        ok: false,
+        status: "invalid",
+        message: "Invalid process or user identity.",
+      };
     }
 
     const userRecordId = `user:${userKey}`;
@@ -216,10 +243,14 @@ export async function setQuestModeAction(
     revalidatePath("/");
     revalidatePath(`/process/${processKey}`);
     revalidatePath("/profile");
-    return { ok: true };
+    return { ok: true, status: "applied" };
   } catch (error) {
     console.error("setQuestModeAction failed", error);
-    return { ok: false };
+    return {
+      ok: false,
+      status: "error",
+      message: "Unable to update process state right now.",
+    };
   }
 }
 
@@ -237,6 +268,7 @@ interface SyncQuestProgressInput {
 
 interface SyncQuestProgressResult {
   ok: boolean;
+  status: "synced" | "unauthenticated" | "invalid" | "error";
   completedAt?: string;
 }
 
@@ -246,7 +278,7 @@ export async function syncQuestProgressAction(
   try {
     const userId = await getCurrentUserId();
     if (!userId) {
-      return { ok: false };
+      return { ok: false, status: "unauthenticated" };
     }
 
     const userKey = stripTablePrefix(userId, "user");
@@ -258,7 +290,7 @@ export async function syncQuestProgressAction(
       !isSafeRecordKey(userKey) ||
       !isSafeRecordKey(processKey)
     ) {
-      return { ok: false };
+      return { ok: false, status: "invalid" };
     }
 
     const userRecordId = `user:${userKey}`;
@@ -272,25 +304,19 @@ export async function syncQuestProgressAction(
     const completionPoints = Math.max(0, toFiniteNumber(input.completionPoints, 0));
     const completed = Boolean(input.completed);
 
-    const existingRows = asArray<Record<string, unknown>>(
-      queryResult<unknown>(await db.query(`SELECT completed_at FROM ${startedRecordId};`), 0),
-    );
-
-    const existingCompletedAt = existingRows[0]?.completed_at;
-    const normalizedExistingCompletedAt =
-      typeof existingCompletedAt === "string" && existingCompletedAt.trim().length > 0
-        ? existingCompletedAt
-        : existingCompletedAt instanceof Date
-        ? existingCompletedAt.toISOString()
-        : undefined;
+    let existingCompletedAtDate: Date | null = null;
+    try {
+      const existingRows = asArray<Record<string, unknown>>(
+        queryResult<unknown>(await db.query(`SELECT completed_at FROM ${startedRecordId};`), 0),
+      );
+      existingCompletedAtDate = toValidDate(existingRows[0]?.completed_at);
+    } catch (readError) {
+      // Continue with update to recover records that contain a legacy invalid completed_at value.
+      console.warn("syncQuestProgressAction completed_at read failed", readError);
+    }
+    const requestedCompletedAtDate = toValidDate(input.completedAt);
     const persistedCompletedAt =
-      completed
-        ? (normalizedExistingCompletedAt
-            ? normalizedExistingCompletedAt
-            : typeof input.completedAt === "string" && input.completedAt.trim().length > 0
-            ? input.completedAt
-            : new Date().toISOString())
-        : null;
+      completed ? (existingCompletedAtDate ?? requestedCompletedAtDate ?? new Date()) : null;
 
     if (persistedCompletedAt) {
       await db.query(
@@ -351,11 +377,12 @@ export async function syncQuestProgressAction(
 
     return {
       ok: true,
-      completedAt: persistedCompletedAt ?? undefined,
+      status: "synced",
+      completedAt: persistedCompletedAt?.toISOString(),
     };
   } catch (error) {
     console.error("syncQuestProgressAction failed", error);
-    return { ok: false };
+    return { ok: false, status: "error" };
   }
 }
 
