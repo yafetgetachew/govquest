@@ -10,6 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
+function getCallbackUrl(): string {
+  if (typeof window === "undefined") {
+    return "http://localhost:3000/";
+  }
+
+  return `${window.location.origin}/`;
+}
+
 export function SignUpForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -47,12 +55,13 @@ export function SignUpForm() {
             const name = String(formData.get("name") ?? "").trim();
             const email = String(formData.get("email") ?? "").trim();
             const password = String(formData.get("password") ?? "");
+            const callbackURL = getCallbackUrl();
 
             const result = await authClient.signUp.email({
               name,
               email,
               password,
-              callbackURL: "/",
+              callbackURL,
             });
 
             setPending(false);

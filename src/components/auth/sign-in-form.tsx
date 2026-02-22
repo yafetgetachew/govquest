@@ -16,6 +16,14 @@ const TEST_USER = {
   password: "Test@123456",
 };
 
+function getCallbackUrl(): string {
+  if (typeof window === "undefined") {
+    return "http://localhost:3000/";
+  }
+
+  return `${window.location.origin}/`;
+}
+
 export function SignInForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -54,11 +62,12 @@ export function SignInForm() {
             const formData = new FormData(event.currentTarget);
             const email = String(formData.get("email") ?? "").trim();
             const password = String(formData.get("password") ?? "");
+            const callbackURL = getCallbackUrl();
 
             const result = await authClient.signIn.email({
               email,
               password,
-              callbackURL: "/",
+              callbackURL,
             });
 
             setPending(false);
@@ -91,9 +100,10 @@ export function SignInForm() {
           disabled={googlePending}
           onClick={async () => {
             setGooglePending(true);
+            const callbackURL = getCallbackUrl();
             await authClient.signIn.social({
               provider: "google",
-              callbackURL: "/",
+              callbackURL,
             });
             setGooglePending(false);
           }}
@@ -110,19 +120,21 @@ export function SignInForm() {
             setError(null);
 
             try {
+              const callbackURL = getCallbackUrl();
               await authClient.signUp.email({
                 name: TEST_USER.name,
                 email: TEST_USER.email,
                 password: TEST_USER.password,
-                callbackURL: "/",
+                callbackURL,
               });
             } catch {}
 
             try {
+              const callbackURL = getCallbackUrl();
               const signInResult = await authClient.signIn.email({
                 email: TEST_USER.email,
                 password: TEST_USER.password,
-                callbackURL: "/",
+                callbackURL,
               });
 
               if (signInResult.error) {
