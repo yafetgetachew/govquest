@@ -2,8 +2,6 @@
 
 GovQuest is a Next.js app for Ethiopian process guides with SurrealDB.
 
-Yes, a Dockerfile is needed for container deployment, and it already exists at `/Users/morph/Projects/gvt/Dockerfile`.
-
 ## Local Development
 
 Prerequisites: Docker + Docker Compose, Node 20+, pnpm.
@@ -25,7 +23,7 @@ To stop local DB/services:
 pnpm db:down
 ```
 
-## Production Deploy (Hetzner)
+## Production Deploy
 
 1. Copy env file and set real values:
 

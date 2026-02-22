@@ -1,0 +1,51 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.HETZNER_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.HETZNER_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy on server
+        env:
+          DEPLOY_HOST: ${{ secrets.HETZNER_HOST }}
+          DEPLOY_USER: ${{ secrets.HETZNER_USER }}
+          DEPLOY_DIR: ${{ secrets.HETZNER_DEPLOY_DIR }}
+          DEPLOY_BRANCH: main
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/id_ed25519 "${DEPLOY_USER}@${DEPLOY_HOST}" "bash -s" <<EOF
+          set -euo pipefail
+          cd "${DEPLOY_DIR}"
+          git fetch origin "${DEPLOY_BRANCH}"
+          git checkout "${DEPLOY_BRANCH}"
+          git pull --ff-only origin "${DEPLOY_BRANCH}"
+          docker compose up -d --build
+          docker image prune -f
+          EOF
