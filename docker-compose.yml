@@ -63,6 +63,30 @@ services:
       ]
     restart: "on-failure:5"
 
+  surreal-migrate:
+    image: surrealdb/surrealdb:v2.3
+    depends_on:
+      - surrealdb
+      - surreal-schema
+    volumes:
+      - ./surreal/migrations/001-default-field-semantics.surql:/migrate-001.surql:ro
+    command:
+      [
+        "import",
+        "--conn",
+        "http://surrealdb:8000/rpc",
+        "--user",
+        "${SURREALDB_USER}",
+        "--pass",
+        "${SURREALDB_PASS}",
+        "--ns",
+        "${SURREALDB_NS}",
+        "--db",
+        "${SURREALDB_DB}",
+        "/migrate-001.surql"
+      ]
+    restart: "on-failure:5"
+
   web:
     build:
       context: .
@@ -71,6 +95,7 @@ services:
       - surrealdb
       - surreal-schema
       - surreal-catalog
+      - surreal-migrate
     restart: unless-stopped
     environment:
       NODE_ENV: production

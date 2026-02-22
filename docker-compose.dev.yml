@@ -46,6 +46,30 @@ services:
       ]
     restart: "on-failure:5"
 
+  surreal-migrate:
+    image: surrealdb/surrealdb:v2.3
+    depends_on:
+      - surrealdb
+      - surreal-seed
+    volumes:
+      - ./surreal/migrations/001-default-field-semantics.surql:/migrate-001.surql:ro
+    command:
+      [
+        "import",
+        "--conn",
+        "http://surrealdb:8000/rpc",
+        "--user",
+        "${SURREALDB_USER:-root}",
+        "--pass",
+        "${SURREALDB_PASS:-root}",
+        "--ns",
+        "${SURREALDB_NS:-govquest}",
+        "--db",
+        "${SURREALDB_DB:-app}",
+        "/migrate-001.surql"
+      ]
+    restart: "on-failure:5"
+
   web:
     build:
       context: .
@@ -53,6 +77,7 @@ services:
     depends_on:
       - surrealdb
       - surreal-seed
+      - surreal-migrate
       - mailhog
     environment:
       NODE_ENV: production

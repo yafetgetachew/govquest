@@ -46,6 +46,7 @@ docker compose up -d --build
 This uses `/Users/morph/Projects/gvt/docker-compose.yml` (non-destructive schema import from `/Users/morph/Projects/gvt/surreal/schema.surql`).
 
 Production also imports `/Users/morph/Projects/gvt/surreal/catalog-prod.surql` for the process/task graph.
+It also applies `/Users/morph/Projects/gvt/surreal/migrations/001-default-field-semantics.surql` on startup to keep mutable fields (`started.progress_percent`, `started.active`, etc.) writable.
 
 When you add or update processes in `/Users/morph/Projects/gvt/surreal/schema-and-seed.surql`, rebuild and commit the production catalog before deploying:
 
