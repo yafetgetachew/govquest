@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Play, RotateCcw } from "lucide-react";
+import { Play, RotateCcw, X } from "lucide-react";
 
 import { recordQuestStartAction } from "@/app/actions";
 import {
@@ -58,6 +58,24 @@ export function QuestModeToggleButton({ processKey, userId }: QuestModeToggleBut
     return <div className="h-9 w-36" aria-hidden />;
   }
 
+  const action = started
+    ? isCompleted
+      ? "reinitialize"
+      : "cancel"
+    : "start";
+  const label =
+    action === "start"
+      ? "Start process"
+      : action === "cancel"
+      ? "Cancel process"
+      : "Reinitialize process";
+  const title =
+    action === "start"
+      ? "Start process"
+      : action === "cancel"
+      ? "Cancel this process and reset task statuses"
+      : "Reset all task statuses and start this process again";
+
   return (
     <Button
       type="button"
@@ -65,20 +83,32 @@ export function QuestModeToggleButton({ processKey, userId }: QuestModeToggleBut
       variant={started ? "ghost" : "default"}
       disabled={isPending}
       onClick={() => {
-        if (!started) {
+        if (action === "start") {
           setQuestMode(true);
-        } else {
-          reinitiateQuestMode();
+          startTransition(async () => {
+            await recordQuestStartAction(processKey);
+          });
+          return;
         }
 
-        startTransition(async () => {
-          await recordQuestStartAction(processKey);
-        });
+        if (action === "cancel") {
+          setQuestMode(false);
+          return;
+        }
+
+        if (action === "reinitialize") {
+          reinitiateQuestMode();
+          startTransition(async () => {
+            await recordQuestStartAction(processKey);
+          });
+        }
       }}
-      title={started ? "Reset all task statuses and start this process again" : "Start process"}
+      title={title}
     >
-      {started ? <RotateCcw className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-      {started || isCompleted ? "Reinitiate process" : "Start process"}
+      {action === "start" ? <Play className="h-4 w-4" /> : null}
+      {action === "cancel" ? <X className="h-4 w-4" /> : null}
+      {action === "reinitialize" ? <RotateCcw className="h-4 w-4" /> : null}
+      {label}
     </Button>
   );
 }

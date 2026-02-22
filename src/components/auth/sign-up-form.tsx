@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,20 @@ export function SignUpForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void fetch("/api/auth/sign-up/email", {
+      method: "OPTIONS",
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(() => undefined);
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   return (
     <Card className="w-full max-w-md">

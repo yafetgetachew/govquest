@@ -5,8 +5,11 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig = {
   output: "standalone",
-  transpilePackages: ["surrealdb-better-auth"],
   outputFileTracingRoot: rootDir,
+  onDemandEntries: {
+    maxInactiveAge: 60 * 60 * 1000,
+    pagesBufferLength: 20,
+  },
   turbopack: {
     root: rootDir,
   },

@@ -298,7 +298,11 @@ function ReadOnlyTaskList({ tasks, level }: { tasks: TaskNode[]; level: number }
           <p className="font-semibold text-foreground">{task.title}</p>
           <p className="mt-1 text-xs text-muted-foreground">{task.description}</p>
           <TaskContextSummary task={task} className="mt-2" includeDescription={false} />
-          <p className="mt-1 text-xs text-muted-foreground">Time estimate: {estimateTaskTime(task)}</p>
+          {getTaskTimeEstimate(task) ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Time estimate: {getTaskTimeEstimate(task)}
+            </p>
+          ) : null}
           {task.children.length > 0 ? (
             <div className="mt-3 space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Sub-tasks</p>
@@ -335,136 +339,137 @@ function TaskAccordion({
   activeTaskKey: string | null;
 }) {
   let runningSequence = sequenceOffset;
+  const accordionItems = tasks.map((task, index) => {
+    const itemSequence = runningSequence;
+    runningSequence += 1 + countTaskNodes(task.children);
+    const tips = tipsByTask[task.key] ?? [];
+    const taskState = taskStateByKey[task.key] ?? "none";
+    const isDone = !readOnly && taskState === "done";
+    const isActiveTask = !readOnly && activeTaskKey === task.key;
+    const canPostTip =
+      taskState === "done" || taskState === "not_necessary" || taskState === "denied";
+    const timeEstimate = getTaskTimeEstimate(task);
 
-  return (
-    <Accordion type="multiple" className={cn("space-y-3", level > 0 && "ml-4")}>
-      {tasks.map((task, index) => {
-        const itemSequence = runningSequence;
-        runningSequence += 1 + countTaskNodes(task.children);
-        const tips = tipsByTask[task.key] ?? [];
-        const taskState = taskStateByKey[task.key] ?? "none";
-        const isDone = !readOnly && taskState === "done";
-        const isActiveTask = !readOnly && activeTaskKey === task.key;
-        const canPostTip =
-          taskState === "done" || taskState === "not_necessary" || taskState === "denied";
-        const timeEstimate = estimateTaskTime(task);
-
-        return (
-          <AccordionItem
-            key={task.id}
-            value={`${task.id}-${level}`}
-            className={cn(
-              "relative ml-6 overflow-visible border border-border/70 bg-card/90 data-[state=open]:z-20",
-              isActiveTask && "border-primary/45 bg-primary/[0.05]",
-              animateIn && "opacity-0 animate-[gvt-task-reveal_360ms_ease-out_forwards]",
-            )}
-            style={animateIn ? { animationDelay: `${itemSequence * 120}ms` } : undefined}
-          >
-            <ChecklistConnector
-              isFirst={index === 0}
-              isLast={index === tasks.length - 1}
-              tone={readOnly ? "default" : toLineageTone(taskState)}
-              className="-left-6"
-            />
-            <AccordionTrigger
+    return (
+      <AccordionItem
+        key={task.id}
+        value={`${task.id}-${level}`}
+        className={cn(
+          "relative ml-6 overflow-visible border border-border/70 bg-card/90 data-[state=open]:z-20",
+          isActiveTask && "border-primary/45 bg-primary/[0.05]",
+          animateIn && "opacity-0 animate-[gvt-task-reveal_360ms_ease-out_forwards]",
+        )}
+        style={animateIn ? { animationDelay: `${itemSequence * 120}ms` } : undefined}
+      >
+        <ChecklistConnector
+          isFirst={index === 0}
+          isLast={index === tasks.length - 1}
+          tone={readOnly ? "default" : toLineageTone(taskState)}
+          className="-left-6"
+        />
+        <AccordionTrigger
+          className={cn(
+            "group",
+            isActiveTask && "gvt-task-sheen",
+          )}
+        >
+          <div className="relative z-10 pr-2">
+            <p
               className={cn(
-                "group",
-                isActiveTask && "gvt-task-sheen",
+                "font-semibold text-foreground",
+                isDone && "text-muted-foreground line-through",
               )}
             >
-              <div className="relative z-10 pr-2">
-                <p
-                  className={cn(
-                    "font-semibold text-foreground",
-                    isDone && "text-muted-foreground line-through",
-                  )}
-                >
-                  {task.title}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground group-data-[state=open]:hidden">
-                  Time estimate: {timeEstimate}
-                </p>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4">
-                <div className={cn("flex gap-3", !readOnly && "items-start justify-between")}>
-                  <TaskContextSummary
-                    task={task}
-                    includeDescription
-                    className={cn(!readOnly && "min-w-0 flex-1")}
+              {task.title}
+            </p>
+            {timeEstimate ? (
+              <p className="mt-1 text-xs text-muted-foreground">Time estimate: {timeEstimate}</p>
+            ) : null}
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-4">
+            <div className={cn("flex gap-3", !readOnly && "items-start justify-between")}>
+              <TaskContextSummary
+                task={task}
+                includeDescription
+                className={cn(!readOnly && "min-w-0 flex-1")}
+              />
+              {!readOnly ? (
+                <div className="shrink-0">
+                  <TaskStateSelector
+                    value={taskState}
+                    onChange={(state) => onTaskStateChange(task.key, state)}
                   />
-                  {!readOnly ? (
-                    <div className="shrink-0">
-                      <TaskStateSelector
-                        value={taskState}
-                        onChange={(state) => onTaskStateChange(task.key, state)}
-                      />
-                    </div>
-                  ) : null}
                 </div>
-                {!readOnly ? (
-                  <>
-                    <section className="space-y-3 border-t border-border/70 pt-3">
-                      {canPostTip ? (
-                        isAuthenticated ? (
-                          <form
-                            action={createTipAction}
-                            className="space-y-3"
-                          >
-                            <input type="hidden" name="taskId" value={task.key} />
-                            <Textarea
-                              name="content"
-                              placeholder="Share what worked, what changed, and where delays happened..."
-                              required
-                              maxLength={1200}
-                            />
-                            <Button size="sm" type="submit">
-                              Post tip
-                            </Button>
-                          </form>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            <Link className="font-medium text-foreground underline" href="/sign-in">
-                              Sign in
-                            </Link> to post updates and vote on tips.
-                          </p>
-                        )
-                      ) : null}
+              ) : null}
+            </div>
+            {!readOnly ? (
+              <>
+                <section className="space-y-3 border-t border-border/70 pt-3">
+                  {canPostTip ? (
+                    isAuthenticated ? (
+                      <form
+                        action={createTipAction}
+                        className="space-y-3"
+                      >
+                        <input type="hidden" name="taskId" value={task.key} />
+                        <Textarea
+                          name="content"
+                          placeholder="Share what worked, what changed, and where delays happened..."
+                          required
+                          maxLength={1200}
+                        />
+                        <Button size="sm" type="submit">
+                          Post tip
+                        </Button>
+                      </form>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        <Link className="font-medium text-foreground underline" href="/sign-in">
+                          Sign in
+                        </Link> to post updates and vote on tips.
+                      </p>
+                    )
+                  ) : null}
 
-                      {tips.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No tips yet for this step. Finish the process and help others by sharing your experience
-                        </p>
-                      ) : (
-                        <TipCarousel tips={tips} isAuthenticated={isAuthenticated} />
-                      )}
-                    </section>
-                  </>
-                ) : null}
+                  {tips.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No tips yet for this step. Finish the process and help others by sharing your experience
+                    </p>
+                  ) : (
+                    <TipCarousel tips={tips} isAuthenticated={isAuthenticated} />
+                  )}
+                </section>
+              </>
+            ) : null}
 
-                {task.children.length > 0 ? (
-                  <section className="space-y-3">
-                    <p className="text-sm font-medium text-muted-foreground">Sub-tasks</p>
-                    <TaskAccordion
-                      tasks={task.children}
-                      tipsByTask={tipsByTask}
-                      isAuthenticated={isAuthenticated}
-                      readOnly={readOnly}
-                      level={level + 1}
-                      sequenceOffset={itemSequence + 1}
-                      animateIn={animateIn}
-                      taskStateByKey={taskStateByKey}
-                      onTaskStateChange={onTaskStateChange}
-                      activeTaskKey={activeTaskKey}
-                    />
-                  </section>
-                ) : null}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        );
-      })}
+            {task.children.length > 0 ? (
+              <section className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">Sub-tasks</p>
+                <TaskAccordion
+                  tasks={task.children}
+                  tipsByTask={tipsByTask}
+                  isAuthenticated={isAuthenticated}
+                  readOnly={readOnly}
+                  level={level + 1}
+                  sequenceOffset={itemSequence + 1}
+                  animateIn={animateIn}
+                  taskStateByKey={taskStateByKey}
+                  onTaskStateChange={onTaskStateChange}
+                  activeTaskKey={activeTaskKey}
+                />
+              </section>
+            ) : null}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    );
+  });
+
+  return (
+    <Accordion type="single" collapsible className={cn("space-y-3", level > 0 && "ml-4")}>
+      {accordionItems}
     </Accordion>
   );
 }
@@ -1048,6 +1053,11 @@ function formatDate(rawDate: string): string {
   }).format(date);
 }
 
+function isDocumentPreparationTask(task: TaskNode): boolean {
+  const normalizedTitle = task.title.toLowerCase().trim();
+  return /\bprepare\b.*\bdocuments?\b/.test(normalizedTitle);
+}
+
 function estimateTaskTime(task: TaskNode): string {
   const descriptionWords = task.description.split(/\s+/).filter(Boolean).length;
   const complexityScore = descriptionWords + task.children.length * 18;
@@ -1070,6 +1080,14 @@ function estimateTaskTime(task: TaskNode): string {
   }
 
   return "50+ min";
+}
+
+function getTaskTimeEstimate(task: TaskNode): string | null {
+  if (isDocumentPreparationTask(task)) {
+    return null;
+  }
+
+  return estimateTaskTime(task);
 }
 
 function collectOrderedTaskKeys(tasks: TaskNode[]): string[] {

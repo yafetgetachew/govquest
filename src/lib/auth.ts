@@ -2,13 +2,13 @@ import "server-only";
 
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { createSurrealAdapter } from "@/lib/surrealdb-better-auth-adapter";
+import { surrealAdapter } from "@/lib/surreal-auth-adapter";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
 export const auth = betterAuth({
-  database: createSurrealAdapter({
+  database: surrealAdapter({
     address: process.env.SURREALDB_URL ?? "http://127.0.0.1:8000/rpc",
     username: process.env.SURREALDB_USER ?? "root",
     password: process.env.SURREALDB_PASS ?? "root",
