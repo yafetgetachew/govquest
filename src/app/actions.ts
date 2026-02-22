@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
+import { getProcessTaskTree } from "@/lib/process-data";
 import { getSurrealClient } from "@/lib/surreal";
 import {
   asArray,
@@ -14,7 +15,7 @@ import {
   toRecordId,
   toSafeInt,
 } from "@/lib/surreal-utils";
-import type { TaskState } from "@/lib/types";
+import type { TaskNode, TaskState } from "@/lib/types";
 
 const TIP_MAX_LENGTH = 1200;
 const FEEDBACK_MAX_LENGTH = 2000;
@@ -25,6 +26,13 @@ const ALLOWED_TASK_STATES = new Set<TaskState>([
   "not_necessary",
   "denied",
 ]);
+const TASK_STATE_WEIGHT: Record<TaskState, number> = {
+  none: 0,
+  half: 0.5,
+  done: 1,
+  not_necessary: 1,
+  denied: 0,
+};
 
 export type VoteDirection = "upvote" | "downvote";
 
@@ -107,23 +115,6 @@ async function ensureStartedRelation(
   return { db, startedRecordId };
 }
 
-function clampPercent(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function toFiniteNumber(value: unknown, fallback = 0): number {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
 function toValidDate(value: unknown): Date | null {
   if (value instanceof Date && Number.isFinite(value.getTime())) {
     return value;
@@ -166,6 +157,256 @@ function sanitizeTaskStateMap(value: unknown): Record<string, TaskState> {
   }
 
   return output;
+}
+
+interface QuestProgressSnapshot {
+  manualTaskStateByKey: Record<string, TaskState>;
+  progressPercent: number;
+  resolvedCount: number;
+  completedCount: number;
+  totalCount: number;
+  completionPoints: number;
+  completed: boolean;
+}
+
+function collectUniqueTaskKeys(tasks: TaskNode[]): string[] {
+  const keys = new Set<string>();
+
+  const visit = (input: TaskNode[]) => {
+    for (const task of input) {
+      if (task.key) {
+        keys.add(task.key);
+      }
+
+      if (task.children.length > 0) {
+        visit(task.children);
+      }
+    }
+  };
+
+  visit(tasks);
+
+  return Array.from(keys);
+}
+
+function filterManualTaskStateByKnownKeys(
+  taskStateByKey: Record<string, TaskState>,
+  knownTaskKeys: string[],
+): Record<string, TaskState> {
+  if (!taskStateByKey || typeof taskStateByKey !== "object") {
+    return {};
+  }
+
+  const known = new Set(knownTaskKeys);
+  const filtered: Record<string, TaskState> = {};
+
+  for (const [taskKey, state] of Object.entries(taskStateByKey)) {
+    if (!known.has(taskKey) || !isTaskState(state) || state === "none") {
+      continue;
+    }
+
+    filtered[taskKey] = state;
+  }
+
+  return filtered;
+}
+
+function computeEffectiveTaskStateByKey(
+  tasks: TaskNode[],
+  manualTaskStateByKey: Record<string, TaskState>,
+): Record<string, TaskState> {
+  const effectiveTaskStateByKey: Record<string, TaskState> = {};
+
+  const applyInheritance = (nodes: TaskNode[], inheritedState?: TaskState) => {
+    for (const node of nodes) {
+      if (!node.key) {
+        applyInheritance(node.children, inheritedState);
+        continue;
+      }
+
+      const manualState = manualTaskStateByKey[node.key];
+      const hasManualState = isTaskState(manualState) && manualState !== "none";
+      const nextState = hasManualState ? manualState : inheritedState ?? "none";
+      effectiveTaskStateByKey[node.key] = nextState;
+
+      const inheritedForChildren = hasManualState
+        ? isTerminalTaskState(manualState)
+          ? manualState
+          : undefined
+        : inheritedState;
+
+      applyInheritance(node.children, inheritedForChildren);
+    }
+  };
+
+  const applyAggregation = (nodes: TaskNode[]) => {
+    for (const node of nodes) {
+      applyAggregation(node.children);
+
+      if (!node.key) {
+        continue;
+      }
+
+      const manualState = manualTaskStateByKey[node.key];
+      if (isTaskState(manualState) && manualState !== "none") {
+        effectiveTaskStateByKey[node.key] = manualState;
+        continue;
+      }
+
+      if (node.children.length === 0) {
+        continue;
+      }
+
+      const childStates = node.children
+        .map((child) => (child.key ? effectiveTaskStateByKey[child.key] : null))
+        .filter((state): state is TaskState => state !== null);
+
+      if (childStates.length === 0) {
+        continue;
+      }
+
+      effectiveTaskStateByKey[node.key] = aggregateTaskStateFromChildren(childStates);
+    }
+  };
+
+  applyInheritance(tasks);
+  applyAggregation(tasks);
+
+  return effectiveTaskStateByKey;
+}
+
+function aggregateTaskStateFromChildren(childStates: TaskState[]): TaskState {
+  const hasHalf = childStates.includes("half");
+  const hasNone = childStates.includes("none");
+  const terminalStates = childStates.filter(isTerminalTaskState);
+  const areAllTerminal = terminalStates.length === childStates.length;
+
+  if (areAllTerminal) {
+    const hasDenied = terminalStates.includes("denied");
+
+    if (hasDenied) {
+      const uniqueTerminalStates = new Set(terminalStates);
+      return uniqueTerminalStates.size === 1 ? "denied" : "half";
+    }
+
+    const uniqueTerminalStates = new Set(terminalStates);
+
+    if (uniqueTerminalStates.size === 1) {
+      return terminalStates[0];
+    }
+
+    return "done";
+  }
+
+  if (hasHalf || (hasNone && terminalStates.length > 0)) {
+    return "half";
+  }
+
+  if (hasNone) {
+    return "none";
+  }
+
+  return "half";
+}
+
+function isTerminalTaskState(state: TaskState): state is "done" | "not_necessary" | "denied" {
+  return state === "done" || state === "not_necessary" || state === "denied";
+}
+
+function isTaskState(value: unknown): value is TaskState {
+  return (
+    value === "none" ||
+    value === "half" ||
+    value === "done" ||
+    value === "not_necessary" ||
+    value === "denied"
+  );
+}
+
+function computeQuestProgressFromManualOnly(
+  manualTaskStateByKey: Record<string, TaskState>,
+): QuestProgressSnapshot {
+  const keys = Object.keys(manualTaskStateByKey);
+  const totalCount = keys.length;
+  const completionPoints = keys.reduce(
+    (total, key) => total + TASK_STATE_WEIGHT[manualTaskStateByKey[key] ?? "none"],
+    0,
+  );
+  const resolvedCount = keys.filter((key) => {
+    const state = manualTaskStateByKey[key];
+    return state === "done" || state === "not_necessary" || state === "denied";
+  }).length;
+  const completedCount = keys.filter((key) => {
+    const state = manualTaskStateByKey[key];
+    return state === "done" || state === "not_necessary";
+  }).length;
+  const progressPercent = totalCount === 0 ? 0 : Math.round((completionPoints / totalCount) * 100);
+
+  return {
+    manualTaskStateByKey,
+    progressPercent,
+    resolvedCount,
+    completedCount,
+    totalCount,
+    completionPoints,
+    completed: totalCount > 0 && completedCount === totalCount,
+  };
+}
+
+async function computeQuestProgressFromProcessGraph(
+  processKey: string,
+  manualTaskStateByKey: Record<string, TaskState>,
+): Promise<QuestProgressSnapshot> {
+  const processTree = await getProcessTaskTree(processKey);
+  if (processTree.connectionError || !processTree.process) {
+    return computeQuestProgressFromManualOnly(manualTaskStateByKey);
+  }
+
+  const allTaskKeys = collectUniqueTaskKeys(processTree.tasks);
+  if (allTaskKeys.length === 0) {
+    return {
+      manualTaskStateByKey: {},
+      progressPercent: 0,
+      resolvedCount: 0,
+      completedCount: 0,
+      totalCount: 0,
+      completionPoints: 0,
+      completed: false,
+    };
+  }
+
+  const filteredManualTaskStateByKey = filterManualTaskStateByKnownKeys(
+    manualTaskStateByKey,
+    allTaskKeys,
+  );
+  const taskStateByKey = computeEffectiveTaskStateByKey(
+    processTree.tasks,
+    filteredManualTaskStateByKey,
+  );
+  const resolvedCount = allTaskKeys.filter((taskKey) => {
+    const state = taskStateByKey[taskKey];
+    return state === "done" || state === "not_necessary" || state === "denied";
+  }).length;
+  const completedCount = allTaskKeys.filter((taskKey) => {
+    const state = taskStateByKey[taskKey];
+    return state === "done" || state === "not_necessary";
+  }).length;
+  const completionPoints = allTaskKeys.reduce(
+    (total, taskKey) => total + TASK_STATE_WEIGHT[taskStateByKey[taskKey] ?? "none"],
+    0,
+  );
+  const totalCount = allTaskKeys.length;
+  const progressPercent = totalCount === 0 ? 0 : Math.round((completionPoints / totalCount) * 100);
+
+  return {
+    manualTaskStateByKey: filteredManualTaskStateByKey,
+    progressPercent,
+    resolvedCount,
+    completedCount,
+    totalCount,
+    completionPoints,
+    completed: totalCount > 0 && completedCount === totalCount,
+  };
 }
 
 interface SetQuestModeResult {
@@ -297,12 +538,16 @@ export async function syncQuestProgressAction(
     const processRecordId = `process:${processKey}`;
     const { db, startedRecordId } = await ensureStartedRelation(userRecordId, processRecordId);
     const sanitizedManualTaskState = sanitizeTaskStateMap(input.manualTaskStateByKey);
-    const progressPercent = clampPercent(toFiniteNumber(input.progressPercent, 0));
-    const resolvedCount = Math.max(0, Math.round(toFiniteNumber(input.resolvedCount, 0)));
-    const completedCount = Math.max(0, Math.round(toFiniteNumber(input.completedCount, 0)));
-    const totalCount = Math.max(0, Math.round(toFiniteNumber(input.totalCount, 0)));
-    const completionPoints = Math.max(0, toFiniteNumber(input.completionPoints, 0));
-    const completed = Boolean(input.completed);
+    const progressSnapshot = await computeQuestProgressFromProcessGraph(
+      processKey,
+      sanitizedManualTaskState,
+    );
+    const progressPercent = progressSnapshot.progressPercent;
+    const resolvedCount = progressSnapshot.resolvedCount;
+    const completedCount = progressSnapshot.completedCount;
+    const totalCount = progressSnapshot.totalCount;
+    const completionPoints = progressSnapshot.completionPoints;
+    const completed = progressSnapshot.completed;
 
     let existingCompletedAtDate: Date | null = null;
     try {
@@ -334,7 +579,7 @@ export async function syncQuestProgressAction(
               updated_at = time::now();
         `,
         {
-          manualTaskState: sanitizedManualTaskState,
+          manualTaskState: progressSnapshot.manualTaskStateByKey,
           progressPercent,
           resolvedCount,
           completedCount,
@@ -360,7 +605,7 @@ export async function syncQuestProgressAction(
               updated_at = time::now();
         `,
         {
-          manualTaskState: sanitizedManualTaskState,
+          manualTaskState: progressSnapshot.manualTaskStateByKey,
           progressPercent,
           resolvedCount,
           completedCount,
