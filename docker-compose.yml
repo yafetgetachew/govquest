@@ -39,6 +39,30 @@ services:
       ]
     restart: "on-failure:5"
 
+  surreal-catalog:
+    image: surrealdb/surrealdb:v2.3
+    depends_on:
+      - surrealdb
+      - surreal-schema
+    volumes:
+      - ./surreal/catalog-prod.surql:/catalog-prod.surql:ro
+    command:
+      [
+        "import",
+        "--conn",
+        "http://surrealdb:8000/rpc",
+        "--user",
+        "${SURREALDB_USER}",
+        "--pass",
+        "${SURREALDB_PASS}",
+        "--ns",
+        "${SURREALDB_NS}",
+        "--db",
+        "${SURREALDB_DB}",
+        "/catalog-prod.surql"
+      ]
+    restart: "on-failure:5"
+
   web:
     build:
       context: .
@@ -46,6 +70,7 @@ services:
     depends_on:
       - surrealdb
       - surreal-schema
+      - surreal-catalog
     restart: unless-stopped
     environment:
       NODE_ENV: production

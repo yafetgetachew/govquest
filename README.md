@@ -45,6 +45,14 @@ docker compose up -d --build
 
 This uses `/Users/morph/Projects/gvt/docker-compose.yml` (non-destructive schema import from `/Users/morph/Projects/gvt/surreal/schema.surql`).
 
+Production also imports `/Users/morph/Projects/gvt/surreal/catalog-prod.surql` for the process/task graph.
+
+When you add or update processes in `/Users/morph/Projects/gvt/surreal/schema-and-seed.surql`, rebuild and commit the production catalog before deploying:
+
+```bash
+pnpm db:catalog:build
+```
+
 3. Put Nginx/Caddy in front of port `3000` for TLS and set DNS to your domain.
 
 To stop production stack:
