@@ -6,16 +6,12 @@ import { ChevronLeft, ChevronRight, ExternalLink, FileText, MapPin } from "lucid
 
 import {
   createTipAction,
+  syncQuestProgressAction,
   voteTipAction,
   type VoteActionResult,
   type VoteDirection,
 } from "@/app/actions";
-import {
-  appendCompletedProcessHistory,
-  getQuestProgressMetaStorageKey,
-  getQuestProgressStorageKey,
-  readQuestProgressMeta,
-} from "@/components/process/quest-storage";
+import { emitQuestProgressChanged, toUserScope } from "@/components/process/quest-storage";
 import {
   Accordion,
   AccordionContent,
@@ -33,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import type { TaskNode, TipsByTask, TipView } from "@/lib/types";
+import type { ManualTaskStateByKey, TaskNode, TaskState, TipsByTask, TipView } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface QuestTreeProps {
@@ -44,9 +40,8 @@ interface QuestTreeProps {
   userId?: string | null;
   readOnly?: boolean;
   animateIn?: boolean;
+  initialManualTaskStateByKey?: ManualTaskStateByKey;
 }
-
-type TaskState = "none" | "half" | "done" | "not_necessary" | "denied";
 
 const TASK_STATE_WEIGHT: Record<TaskState, number> = {
   none: 0,
@@ -62,7 +57,6 @@ const TASK_STATE_OPTIONS: Array<{ value: TaskState; label: string }> = [
   { value: "not_necessary", label: "Not necessary" },
   { value: "denied", label: "Denied" },
 ];
-const QUEST_PROGRESS_POLICY_VERSION = "2026-02-22-v1";
 
 export function QuestTree({
   processKey,
@@ -72,16 +66,22 @@ export function QuestTree({
   userId,
   readOnly = false,
   animateIn = false,
+  initialManualTaskStateByKey = {},
 }: QuestTreeProps) {
   const allTaskKeys = useMemo(() => collectUniqueTaskKeys(tasks), [tasks]);
-  const storageKey = useMemo(() => getQuestProgressStorageKey(processKey, userId), [processKey, userId]);
-  const progressMetaKey = useMemo(
-    () => getQuestProgressMetaStorageKey(processKey, userId),
-    [processKey, userId],
+  const userScope = useMemo(
+    () => toUserScope(userId),
+    [userId],
   );
-  const [manualTaskStateByKey, setManualTaskStateByKey] = useState<Record<string, TaskState>>({});
-  const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(null);
-  const isStorageHydrated = hydratedStorageKey === storageKey;
+  const normalizedInitialManualTaskStateByKey = useMemo(
+    () => filterManualTaskStateByKnownKeys(initialManualTaskStateByKey, allTaskKeys),
+    [allTaskKeys, initialManualTaskStateByKey],
+  );
+  const [manualTaskStateByKey, setManualTaskStateByKey] = useState<Record<string, TaskState>>(
+    normalizedInitialManualTaskStateByKey,
+  );
+  const completedAtRef = useRef<string | undefined>(undefined);
+  const syncStateFingerprintRef = useRef<string>("");
   const taskStateByKey = useMemo(
     () => computeEffectiveTaskStateByKey(tasks, manualTaskStateByKey),
     [tasks, manualTaskStateByKey],
@@ -90,35 +90,11 @@ export function QuestTree({
   useEffect(() => {
     if (readOnly) {
       setManualTaskStateByKey({});
-      setHydratedStorageKey(null);
       return;
     }
 
-    setHydratedStorageKey(null);
-
-    try {
-      const stored = parseStoredManualTaskState(window.localStorage.getItem(storageKey));
-      const knownKeys = new Set(allTaskKeys);
-      const filtered = Object.fromEntries(
-        Object.entries(stored).filter(([taskKey]) => knownKeys.has(taskKey)),
-      );
-      setManualTaskStateByKey(filtered);
-    } catch {
-      setManualTaskStateByKey({});
-    } finally {
-      setHydratedStorageKey(storageKey);
-    }
-  }, [allTaskKeys, readOnly, storageKey]);
-
-  useEffect(() => {
-    if (readOnly || !isStorageHydrated) {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(storageKey, serializeStoredManualTaskState(manualTaskStateByKey));
-    } catch {}
-  }, [isStorageHydrated, manualTaskStateByKey, readOnly, storageKey]);
+    setManualTaskStateByKey(normalizedInitialManualTaskStateByKey);
+  }, [normalizedInitialManualTaskStateByKey, readOnly]);
 
   const resolvedCount = useMemo(
     () =>
@@ -167,60 +143,94 @@ export function QuestTree({
   }, [orderedTaskKeys, taskStateByKey]);
 
   useEffect(() => {
-    if (readOnly || !isStorageHydrated) {
+    if (!isProcessCompleted) {
+      completedAtRef.current = undefined;
       return;
     }
 
-    try {
-      const previousMeta = readQuestProgressMeta(processKey, userId);
-      const completedAt = isProcessCompleted
-        ? previousMeta?.completedAt ?? new Date().toISOString()
-        : undefined;
-
-      window.localStorage.setItem(
-        progressMetaKey,
-        JSON.stringify({
-          processKey,
-          progressPercent,
-          resolvedCount,
-          completedCount,
-          totalCount,
-          completionPoints,
-          completed: isProcessCompleted,
-          completedAt,
-          updatedAt: new Date().toISOString(),
-        }),
-      );
-
-      if (isProcessCompleted && !previousMeta?.completed) {
-        appendCompletedProcessHistory(
-          {
-            processKey,
-            completedAt: completedAt ?? new Date().toISOString(),
-            progressPercent: 100,
-          },
-          userId,
-        );
-      }
-
-      window.dispatchEvent(
-        new CustomEvent("govquest:quest-progress-changed", {
-          detail: { processKey, progressPercent },
-        }),
-      );
-    } catch {}
+    if (!completedAtRef.current) {
+      completedAtRef.current = new Date().toISOString();
+    }
   }, [
-    completionPoints,
+    isProcessCompleted,
+  ]);
+
+  useEffect(() => {
+    if (readOnly) {
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    emitQuestProgressChanged({
+      processKey,
+      userScope,
+      progressPercent,
+      resolvedCount,
+      completedCount,
+      totalCount,
+      completionPoints,
+      completed: isProcessCompleted,
+      completedAt: completedAtRef.current,
+      updatedAt,
+    });
+  }, [
     completedCount,
+    completionPoints,
     isProcessCompleted,
     processKey,
-    progressMetaKey,
     progressPercent,
     readOnly,
     resolvedCount,
-    userId,
-    isStorageHydrated,
     totalCount,
+    userScope,
+  ]);
+
+  useEffect(() => {
+    if (readOnly || !isAuthenticated || !userId) {
+      return;
+    }
+
+    const syncPayload = {
+      processKey,
+      manualTaskStateByKey: filterNonDefaultManualTaskStates(manualTaskStateByKey),
+      progressPercent,
+      resolvedCount,
+      completedCount,
+      totalCount,
+      completionPoints,
+      completed: isProcessCompleted,
+      completedAt: completedAtRef.current,
+    };
+    const fingerprint = JSON.stringify(syncPayload);
+
+    if (syncStateFingerprintRef.current === fingerprint) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      syncStateFingerprintRef.current = fingerprint;
+      void syncQuestProgressAction(syncPayload).then((result) => {
+        if (result.ok && result.completedAt) {
+          completedAtRef.current = result.completedAt;
+        }
+      });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    completedCount,
+    completionPoints,
+    isAuthenticated,
+    isProcessCompleted,
+    manualTaskStateByKey,
+    processKey,
+    progressPercent,
+    readOnly,
+    resolvedCount,
+    totalCount,
+    userId,
   ]);
 
   const setTaskState = (taskKey: string, state: TaskState) => {
@@ -1238,65 +1248,40 @@ function aggregateTaskStateFromChildren(childStates: TaskState[]): TaskState {
   return "half";
 }
 
-function parseStoredManualTaskState(raw: string | null): Record<string, TaskState> {
-  if (!raw) {
+function filterManualTaskStateByKnownKeys(
+  taskStateByKey: Record<string, TaskState>,
+  knownTaskKeys: string[],
+): Record<string, TaskState> {
+  if (!taskStateByKey || typeof taskStateByKey !== "object") {
     return {};
   }
 
-  const parsed: unknown = JSON.parse(raw);
+  const known = new Set(knownTaskKeys);
+  const filtered: Record<string, TaskState> = {};
 
-  if (Array.isArray(parsed)) {
-    const taskStateByKey: Record<string, TaskState> = {};
-
-    for (const taskKey of parsed) {
-      if (typeof taskKey === "string") {
-        taskStateByKey[taskKey] = "done";
-      }
-    }
-
-    return taskStateByKey;
-  }
-
-  if (!parsed || typeof parsed !== "object") {
-    return {};
-  }
-
-  const parsedRecord = parsed as Record<string, unknown>;
-  const manualCandidate =
-    parsedRecord.version === 2 &&
-    parsedRecord.manual &&
-    typeof parsedRecord.manual === "object"
-      ? (parsedRecord.manual as Record<string, unknown>)
-      : parsedRecord;
-
-  const taskStateByKey: Record<string, TaskState> = {};
-
-  for (const [taskKey, state] of Object.entries(manualCandidate)) {
-    if (typeof taskKey !== "string" || !isTaskState(state) || state === "none") {
+  for (const [taskKey, state] of Object.entries(taskStateByKey)) {
+    if (!known.has(taskKey) || !isTaskState(state) || state === "none") {
       continue;
     }
 
-    taskStateByKey[taskKey] = state;
+    filtered[taskKey] = state;
   }
 
-  return taskStateByKey;
+  return filtered;
 }
 
-function serializeStoredManualTaskState(taskStateByKey: Record<string, TaskState>): string {
-  const manualTaskStateByKey: Record<string, TaskState> = {};
+function filterNonDefaultManualTaskStates(
+  taskStateByKey: Record<string, TaskState>,
+): Record<string, TaskState> {
+  const filtered: Record<string, TaskState> = {};
 
   for (const [taskKey, state] of Object.entries(taskStateByKey)) {
     if (isTaskState(state) && state !== "none") {
-      manualTaskStateByKey[taskKey] = state;
+      filtered[taskKey] = state;
     }
   }
 
-  return JSON.stringify({
-    version: 2,
-    policyVersion: QUEST_PROGRESS_POLICY_VERSION,
-    manual: manualTaskStateByKey,
-    updatedAt: new Date().toISOString(),
-  });
+  return filtered;
 }
 
 function isTerminalTaskState(state: TaskState): state is "done" | "not_necessary" | "denied" {

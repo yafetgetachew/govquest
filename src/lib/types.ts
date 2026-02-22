@@ -3,6 +3,9 @@ export interface ExternalLink {
   url: string;
 }
 
+export type TaskState = "none" | "half" | "done" | "not_necessary" | "denied";
+export type ManualTaskStateByKey = Record<string, TaskState>;
+
 export interface RequiredDocument {
   name: string;
   processKey?: string;

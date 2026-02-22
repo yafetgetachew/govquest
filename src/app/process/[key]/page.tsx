@@ -4,7 +4,12 @@ import { ArrowLeft, ExternalLink, MapPin, Monitor, PersonStanding } from "lucide
 import { ProcessQuestMode } from "@/components/process/process-quest-mode";
 import { QuestModeToggleButton } from "@/components/process/quest-mode-toggle-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProcessDependencyStats, getProcessTaskTree, getTipsByTask } from "@/lib/process-data";
+import {
+  getProcessDependencyStats,
+  getProcessTaskTree,
+  getTipsByTask,
+  getUserQuestState,
+} from "@/lib/process-data";
 import { getServerSession } from "@/lib/session";
 import type { AttendanceMode, ProcessNode, TaskNode } from "@/lib/types";
 
@@ -22,6 +27,7 @@ export default async function ProcessPage({
     getProcessDependencyStats(key),
   ]);
   const isAuthenticated = Boolean(session?.user);
+  const questState = await getUserQuestState(key, session?.user?.id ?? null);
 
   if (connectionError) {
     return (
@@ -177,7 +183,14 @@ export default async function ProcessPage({
               </section>
             ) : null}
           </div>
-          {isAuthenticated ? <QuestModeToggleButton processKey={process.key} userId={session?.user?.id ?? null} /> : null}
+          {isAuthenticated ? (
+            <QuestModeToggleButton
+              processKey={process.key}
+              userId={session?.user?.id ?? null}
+              initialStarted={questState.started}
+              initialCompleted={questState.completed}
+            />
+          ) : null}
         </div>
       </section>
 
@@ -187,6 +200,8 @@ export default async function ProcessPage({
         tipsByTask={tipsByTask}
         isAuthenticated={isAuthenticated}
         userId={session?.user?.id ?? null}
+        initialStarted={questState.started}
+        initialManualTaskStateByKey={questState.manualTaskStateByKey}
       />
 
       <section className="space-y-3 border-t border-border/70 pt-5">

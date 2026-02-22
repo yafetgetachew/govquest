@@ -50,6 +50,30 @@
   --destructive: 0 78% 63%;
   --destructive-foreground: 0 0% 100%;
 
+  --gvt-task-sheen-gradient: linear-gradient(
+    112deg,
+    rgba(255, 255, 255, 0) 0%,
+    hsl(var(--foreground) / 0.02) 16%,
+    hsl(var(--foreground) / 0.05) 30%,
+    hsl(var(--foreground) / 0.1) 44%,
+    hsl(var(--foreground) / 0.12) 50%,
+    hsl(var(--foreground) / 0.1) 56%,
+    hsl(var(--foreground) / 0.05) 70%,
+    hsl(var(--foreground) / 0.02) 84%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  --gvt-task-sheen-opacity: 0.92;
+  --gvt-task-sheen-blend: soft-light;
+
+  --gvt-search-border-sheen-gradient: linear-gradient(
+    108deg,
+    rgba(255, 255, 255, 0) 0%,
+    hsl(var(--foreground) / 0.24) 46%,
+    hsl(var(--foreground) / 0.16) 52%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  --gvt-search-border-sheen-opacity: 0.95;
+
   --radius-xl: 0px;
   --radius-2xl: 0px;
 }
@@ -79,6 +103,31 @@
 
   --destructive: 0 80% 64%;
   --destructive-foreground: 0 0% 100%;
+
+  --gvt-task-sheen-gradient: linear-gradient(
+    112deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.008) 16%,
+    rgba(255, 255, 255, 0.028) 30%,
+    rgba(255, 255, 255, 0.065) 42%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.1) 58%,
+    rgba(255, 255, 255, 0.065) 70%,
+    rgba(255, 255, 255, 0.028) 82%,
+    rgba(255, 255, 255, 0.008) 92%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  --gvt-task-sheen-opacity: 0.72;
+  --gvt-task-sheen-blend: screen;
+
+  --gvt-search-border-sheen-gradient: linear-gradient(
+    108deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 48%,
+    rgba(255, 255, 255, 0.18) 54%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  --gvt-search-border-sheen-opacity: 1;
 }
 
 :root[data-contrast="high"] {
@@ -305,22 +354,10 @@
     width: 62%;
     pointer-events: none;
     will-change: transform;
-    mix-blend-mode: screen;
-    opacity: 0.72;
+    mix-blend-mode: var(--gvt-task-sheen-blend);
+    opacity: var(--gvt-task-sheen-opacity);
     filter: blur(0.8px);
-    background: linear-gradient(
-      112deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.008) 16%,
-      rgba(255, 255, 255, 0.028) 30%,
-      rgba(255, 255, 255, 0.065) 42%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.1) 58%,
-      rgba(255, 255, 255, 0.065) 70%,
-      rgba(255, 255, 255, 0.028) 82%,
-      rgba(255, 255, 255, 0.008) 92%,
-      rgba(255, 255, 255, 0) 100%
-    );
+    background: var(--gvt-task-sheen-gradient);
     animation: gvt-task-sheen 3.6s linear 1;
   }
 
@@ -341,13 +378,8 @@
     padding: 1px;
     pointer-events: none;
     z-index: 1;
-    background: linear-gradient(
-      108deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.5) 48%,
-      rgba(255, 255, 255, 0.18) 54%,
-      rgba(255, 255, 255, 0) 100%
-    );
+    opacity: var(--gvt-search-border-sheen-opacity);
+    background: var(--gvt-search-border-sheen-gradient);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useQuestMode } from "@/components/process/quest-mode-state";
 import { QuestTree } from "@/components/process/quest-tree";
-import type { TaskNode, TipsByTask } from "@/lib/types";
+import type { ManualTaskStateByKey, TaskNode, TipsByTask } from "@/lib/types";
 
 interface ProcessQuestModeProps {
   processKey: string;
@@ -12,6 +12,8 @@ interface ProcessQuestModeProps {
   tipsByTask: TipsByTask;
   isAuthenticated: boolean;
   userId?: string | null;
+  initialStarted?: boolean;
+  initialManualTaskStateByKey?: ManualTaskStateByKey;
 }
 
 export function ProcessQuestMode({
@@ -20,6 +22,8 @@ export function ProcessQuestMode({
   tipsByTask,
   isAuthenticated,
   userId,
+  initialStarted = false,
+  initialManualTaskStateByKey = {},
 }: ProcessQuestModeProps) {
   if (!isAuthenticated) {
     return (
@@ -36,11 +40,18 @@ export function ProcessQuestMode({
     );
   }
 
-  const { hydrated, started } = useQuestMode(processKey, userId);
+  const { hydrated, started } = useQuestMode(processKey, userId, initialStarted);
   const [isStarting, setIsStarting] = useState(false);
   const [revealSequence, setRevealSequence] = useState(0);
+  const [manualStateSeed, setManualStateSeed] = useState<ManualTaskStateByKey>(
+    initialManualTaskStateByKey,
+  );
   const hasInitialized = useRef(false);
   const previousStartedRef = useRef(false);
+
+  useEffect(() => {
+    setManualStateSeed(initialManualTaskStateByKey);
+  }, [initialManualTaskStateByKey, processKey, userId]);
 
   useEffect(() => {
     if (!hydrated) {
@@ -54,6 +65,7 @@ export function ProcessQuestMode({
     }
 
     if (started && !previousStartedRef.current) {
+      setManualStateSeed({});
       setIsStarting(true);
 
       const timeout = window.setTimeout(() => {
@@ -102,6 +114,7 @@ export function ProcessQuestMode({
         isAuthenticated
         animateIn={revealSequence > 0}
         userId={userId}
+        initialManualTaskStateByKey={manualStateSeed}
       />
     </section>
   );

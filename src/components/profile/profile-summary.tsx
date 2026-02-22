@@ -1,11 +1,4 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
-
-import {
-  getCompletedHistoryEventName,
-  readCompletedProcessHistory,
-} from "@/components/process/quest-storage";
+import type { UserCompletedProcessHistoryEntry } from "@/lib/process-data";
 
 interface ProcessTitle {
   key: string;
@@ -13,38 +6,13 @@ interface ProcessTitle {
 }
 
 interface ProfileSummaryProps {
-  userId: string;
   username: string;
   processTitles: ProcessTitle[];
+  history: UserCompletedProcessHistoryEntry[];
 }
 
-export function ProfileSummary({ userId, username, processTitles }: ProfileSummaryProps) {
-  const [history, setHistory] = useState(() => readCompletedProcessHistory(userId));
-  const titleByProcessKey = useMemo(
-    () => new Map(processTitles.map((process) => [process.key, process.title])),
-    [processTitles],
-  );
-
-  useEffect(() => {
-    const refresh = () => {
-      setHistory(readCompletedProcessHistory(userId));
-    };
-
-    refresh();
-
-    const onStorage = () => refresh();
-    const onHistoryChanged = () => refresh();
-
-    window.addEventListener("storage", onStorage);
-    window.addEventListener(getCompletedHistoryEventName(), onHistoryChanged as EventListener);
-    window.addEventListener("govquest:quest-progress-changed", onHistoryChanged as EventListener);
-
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener(getCompletedHistoryEventName(), onHistoryChanged as EventListener);
-      window.removeEventListener("govquest:quest-progress-changed", onHistoryChanged as EventListener);
-    };
-  }, [userId]);
+export function ProfileSummary({ username, processTitles, history }: ProfileSummaryProps) {
+  const titleByProcessKey = new Map(processTitles.map((process) => [process.key, process.title]));
 
   return (
     <section className="space-y-5">

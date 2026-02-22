@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Play, RotateCcw, X } from "lucide-react";
 
-import { recordQuestStartAction } from "@/app/actions";
+import { setQuestModeAction } from "@/app/actions";
 import {
-  getQuestProgressMetaStorageKey,
-  readQuestProgressMeta,
+  getQuestProgressEventName,
+  type QuestProgressEventDetail,
+  toUserScope,
 } from "@/components/process/quest-storage";
 import { useQuestMode } from "@/components/process/quest-mode-state";
 import { Button } from "@/components/ui/button";
@@ -14,45 +15,47 @@ import { Button } from "@/components/ui/button";
 interface QuestModeToggleButtonProps {
   processKey: string;
   userId?: string | null;
+  initialStarted?: boolean;
+  initialCompleted?: boolean;
 }
 
-export function QuestModeToggleButton({ processKey, userId }: QuestModeToggleButtonProps) {
-  const { hydrated, started, setQuestMode, reinitiateQuestMode } = useQuestMode(processKey, userId);
-  const [isPending, startTransition] = useTransition();
-  const [isCompleted, setIsCompleted] = useState(false);
-  const progressMetaStorageKey = useMemo(
-    () => getQuestProgressMetaStorageKey(processKey, userId),
-    [processKey, userId],
+export function QuestModeToggleButton({
+  processKey,
+  userId,
+  initialStarted = false,
+  initialCompleted = false,
+}: QuestModeToggleButtonProps) {
+  const { hydrated, started, setQuestMode, reinitiateQuestMode } = useQuestMode(
+    processKey,
+    userId,
+    initialStarted,
   );
+  const [isPending, startTransition] = useTransition();
+  const [isCompleted, setIsCompleted] = useState(initialCompleted);
+  const userScope = useMemo(() => toUserScope(userId), [userId]);
 
   useEffect(() => {
-    if (!hydrated) {
-      return;
-    }
+    setIsCompleted(initialCompleted);
+  }, [initialCompleted, processKey, userScope]);
 
-    const readCompletion = () => {
-      const meta = readQuestProgressMeta(processKey, userId);
-      setIsCompleted(Boolean(meta?.completed));
-    };
-
-    readCompletion();
-
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === progressMetaStorageKey || event.key === null) {
-        readCompletion();
+  useEffect(() => {
+    const onProgressChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<QuestProgressEventDetail>;
+      if (
+        customEvent.detail?.processKey !== processKey ||
+        customEvent.detail?.userScope !== userScope
+      ) {
+        return;
       }
+
+      setIsCompleted(Boolean(customEvent.detail.completed));
     };
 
-    const onProgressChanged = () => readCompletion();
-
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("govquest:quest-progress-changed", onProgressChanged as EventListener);
-
+    window.addEventListener(getQuestProgressEventName(), onProgressChanged as EventListener);
     return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("govquest:quest-progress-changed", onProgressChanged as EventListener);
+      window.removeEventListener(getQuestProgressEventName(), onProgressChanged as EventListener);
     };
-  }, [hydrated, processKey, progressMetaStorageKey, userId]);
+  }, [processKey, userScope]);
 
   if (!hydrated) {
     return <div className="h-9 w-36" aria-hidden />;
@@ -86,20 +89,25 @@ export function QuestModeToggleButton({ processKey, userId }: QuestModeToggleBut
         if (action === "start") {
           setQuestMode(true);
           startTransition(async () => {
-            await recordQuestStartAction(processKey);
+            await setQuestModeAction(processKey, { started: true, resetProgress: false });
           });
           return;
         }
 
         if (action === "cancel") {
           setQuestMode(false);
+          setIsCompleted(false);
+          startTransition(async () => {
+            await setQuestModeAction(processKey, { started: false, resetProgress: true });
+          });
           return;
         }
 
         if (action === "reinitialize") {
           reinitiateQuestMode();
+          setIsCompleted(false);
           startTransition(async () => {
-            await recordQuestStartAction(processKey);
+            await setQuestModeAction(processKey, { started: true, resetProgress: true });
           });
         }
       }}

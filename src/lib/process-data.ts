@@ -15,9 +15,11 @@ import {
 import type {
   AttendanceMode,
   ExternalLink,
+  ManualTaskStateByKey,
   ProcessNode,
   RequiredDocument,
   RequiredDocumentsMode,
+  TaskState,
   TaskNode,
   TipsByTask,
   TipView,
@@ -27,6 +29,13 @@ const MAX_TASK_DEPTH = 8;
 const PROCESS_CATALOG_CACHE_TTL_MS = 60_000;
 const PROCESS_TREE_CACHE_TTL_MS = 60_000;
 const PROCESS_DEPENDENCY_CACHE_TTL_MS = 120_000;
+const ALLOWED_TASK_STATES = new Set<TaskState>([
+  "none",
+  "half",
+  "done",
+  "not_necessary",
+  "denied",
+]);
 
 interface TimedCacheEntry<T> {
   value: T;
@@ -47,6 +56,31 @@ interface ProcessCatalogPayload {
 
 export interface ProcessDependencyStats {
   requiredByProcessCount: number;
+}
+
+export interface UserQuestState {
+  processKey: string;
+  started: boolean;
+  manualTaskStateByKey: ManualTaskStateByKey;
+  progressPercent: number;
+  resolvedCount: number;
+  completedCount: number;
+  totalCount: number;
+  completionPoints: number;
+  completed: boolean;
+  completedAt?: string;
+  updatedAt?: string;
+}
+
+export interface UserStartedProcessProgress {
+  processKey: string;
+  progressPercent: number;
+}
+
+export interface UserCompletedProcessHistoryEntry {
+  processKey: string;
+  completedAt: string;
+  progressPercent: number;
 }
 
 interface ProcessDataCacheStore {
@@ -260,6 +294,173 @@ export async function getProcessTaskTree(processKey: string): Promise<ProcessTre
       taskKeys: [],
       connectionError: getConnectionErrorMessage(error),
     };
+  }
+}
+
+export async function getUserQuestState(
+  processKeyInput: string,
+  userId?: string | null,
+): Promise<UserQuestState> {
+  const processKey = stripTablePrefix(processKeyInput, "process");
+  const emptyState = createEmptyUserQuestState(processKey);
+
+  if (!userId || !isSafeRecordKey(processKey)) {
+    return emptyState;
+  }
+
+  const userKey = stripTablePrefix(userId, "user");
+  if (!userKey || !isSafeRecordKey(userKey)) {
+    return emptyState;
+  }
+
+  try {
+    const db = await getSurrealClient();
+    const userRecordId = `user:${userKey}`;
+    const processRecordId = `process:${processKey}`;
+    const rows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(
+        await db.query(
+          `
+            SELECT
+              active,
+              manual_task_state,
+              progress_percent,
+              resolved_count,
+              completed_count,
+              total_count,
+              completion_points,
+              completed,
+              completed_at,
+              updated_at
+            FROM started
+            WHERE in = ${userRecordId}
+              AND out = ${processRecordId}
+            LIMIT 1;
+          `,
+        ),
+        0,
+      ),
+    );
+
+    const row = rows[0];
+    if (!row) {
+      return emptyState;
+    }
+
+    return {
+      processKey,
+      started: row.active !== false,
+      manualTaskStateByKey: toManualTaskStateByKey(row.manual_task_state),
+      progressPercent: clampPercent(toSafeNumber(row.progress_percent)),
+      resolvedCount: Math.max(0, Math.round(toSafeNumber(row.resolved_count))),
+      completedCount: Math.max(0, Math.round(toSafeNumber(row.completed_count))),
+      totalCount: Math.max(0, Math.round(toSafeNumber(row.total_count))),
+      completionPoints: Math.max(0, toSafeNumber(row.completion_points)),
+      completed: Boolean(row.completed),
+      completedAt: toOptionalString(row.completed_at),
+      updatedAt: toOptionalString(row.updated_at),
+    };
+  } catch {
+    return emptyState;
+  }
+}
+
+export async function getUserStartedProcessProgress(
+  userId?: string | null,
+): Promise<UserStartedProcessProgress[]> {
+  if (!userId) {
+    return [];
+  }
+
+  const userKey = stripTablePrefix(userId, "user");
+  if (!userKey || !isSafeRecordKey(userKey)) {
+    return [];
+  }
+
+  try {
+    const db = await getSurrealClient();
+    const rows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(
+        await db.query(
+          `
+            SELECT out, active, progress_percent
+            FROM started
+            WHERE in = user:${userKey};
+          `,
+        ),
+        0,
+      ),
+    );
+
+    return rows.flatMap((row) => {
+      if (row.active === false) {
+        return [];
+      }
+
+      const processId = toRecordId(row.out);
+      const processKey = toRecordKey(processId);
+      if (!processKey || !isSafeRecordKey(processKey)) {
+        return [];
+      }
+
+      return [{
+        processKey,
+        progressPercent: clampPercent(toSafeNumber(row.progress_percent)),
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function getUserCompletedProcessHistory(
+  userId?: string | null,
+): Promise<UserCompletedProcessHistoryEntry[]> {
+  if (!userId) {
+    return [];
+  }
+
+  const userKey = stripTablePrefix(userId, "user");
+  if (!userKey || !isSafeRecordKey(userKey)) {
+    return [];
+  }
+
+  try {
+    const db = await getSurrealClient();
+    const rows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(
+        await db.query(
+          `
+            SELECT out, completed_at, progress_percent
+            FROM started
+            WHERE in = user:${userKey}
+              AND completed = true
+              AND completed_at != NONE
+            ORDER BY completed_at DESC
+            LIMIT 200;
+          `,
+        ),
+        0,
+      ),
+    );
+
+    return rows.flatMap((row) => {
+      const processId = toRecordId(row.out);
+      const processKey = toRecordKey(processId);
+      const completedAt = toOptionalString(row.completed_at);
+
+      if (!processKey || !completedAt) {
+        return [];
+      }
+
+      return [{
+        processKey,
+        completedAt,
+        progressPercent: clampPercent(toSafeNumber(row.progress_percent, 100)),
+      }];
+    });
+  } catch {
+    return [];
   }
 }
 
@@ -600,6 +801,64 @@ export async function getProcessDependencyStats(
       requiredByProcessCount: 0,
     };
   }
+}
+
+function createEmptyUserQuestState(processKey: string): UserQuestState {
+  return {
+    processKey,
+    started: false,
+    manualTaskStateByKey: {},
+    progressPercent: 0,
+    resolvedCount: 0,
+    completedCount: 0,
+    totalCount: 0,
+    completionPoints: 0,
+    completed: false,
+  };
+}
+
+function toManualTaskStateByKey(value: unknown): ManualTaskStateByKey {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const input = value as Record<string, unknown>;
+  const output: ManualTaskStateByKey = {};
+
+  for (const [taskKey, taskState] of Object.entries(input)) {
+    if (!isSafeRecordKey(taskKey) || typeof taskState !== "string") {
+      continue;
+    }
+
+    if (!ALLOWED_TASK_STATES.has(taskState as TaskState)) {
+      continue;
+    }
+
+    if (taskState === "none") {
+      continue;
+    }
+
+    output[taskKey] = taskState as TaskState;
+  }
+
+  return output;
+}
+
+function toSafeNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
 
 function collectTaskKeys(tasks: TaskNode[]): string[] {

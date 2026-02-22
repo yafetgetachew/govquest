@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { createAdapterFactory, type DBAdapterDebugLogOption } from "better-auth/adapters";
-import { jsonify, StringRecordId } from "surrealdb";
+import { jsonify } from "surrealdb";
 import { Surreal } from "surrealdb";
 
 export interface SurrealAdapterConfig {
@@ -16,6 +16,7 @@ export interface SurrealAdapterConfig {
 interface ConnectionState {
   db: Surreal | null;
   connecting: Promise<Surreal> | null;
+  normalized: boolean;
 }
 
 declare global {
@@ -34,6 +35,45 @@ function getConnectionKey(config: SurrealAdapterConfig): string {
   return `${config.address}|${config.ns}|${config.db}|${config.username}`;
 }
 
+function normalizeJsonValue(value: unknown): unknown {
+  const normalized = jsonify(value);
+
+  if (
+    normalized &&
+    typeof normalized === "object" &&
+    "rid" in normalized &&
+    typeof (normalized as { rid?: unknown }).rid === "string"
+  ) {
+    return (normalized as { rid: string }).rid;
+  }
+
+  return normalized;
+}
+
+async function normalizeAuthReferenceRows(db: Surreal): Promise<void> {
+  await db.query(`
+    UPDATE account
+      SET userId = userId.rid
+      WHERE userId != NONE
+        AND userId.rid != NONE;
+
+    UPDATE session
+      SET userId = userId.rid
+      WHERE userId != NONE
+        AND userId.rid != NONE;
+
+    UPDATE account
+      SET userId = string::concat('', userId)
+      WHERE userId != NONE
+        AND userId.rid = NONE;
+
+    UPDATE session
+      SET userId = string::concat('', userId)
+      WHERE userId != NONE
+        AND userId.rid = NONE;
+  `);
+}
+
 export const surrealAdapter = (config: SurrealAdapterConfig) => {
   const connectionStates = getConnectionStates();
   const connectionKey = getConnectionKey(config);
@@ -43,6 +83,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
     connectionStates.set(connectionKey, {
       db: null,
       connecting: null,
+      normalized: false,
     });
   }
 
@@ -50,6 +91,14 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
   const ensureConnection = async (): Promise<Surreal> => {
     if (state.db) {
+      if (!state.normalized) {
+        try {
+          await normalizeAuthReferenceRows(state.db);
+        } catch {
+        } finally {
+          state.normalized = true;
+        }
+      }
       return state.db;
     }
 
@@ -68,6 +117,13 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
         },
       });
 
+      try {
+        await normalizeAuthReferenceRows(nextDb);
+      } catch {
+      } finally {
+        state.normalized = true;
+      }
+
       state.db = nextDb;
       state.connecting = null;
       return nextDb;
@@ -84,24 +140,15 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
         return recordIdPattern.test(value);
     };
 
-    const nonRecordIdFields = new Set(["accountId", "providerId"]);
+    const createSerializationFunctions = () => {
+        const isRecordIdField = (field: string): boolean => field === "id";
 
-    const createSerializationFunctions = (recordIdFieldsMap: Map<string, Set<string>>) => {
-        const isRecordIdField = (field: string, model?: string): boolean => {
-            if (field === "id") return true;
-            if (nonRecordIdFields.has(field)) return false;
-            if (model && recordIdFieldsMap.has(model)) {
-                return recordIdFieldsMap.get(model)!.has(field);
-            }
-            return field.endsWith("Id");
-        };
-
-        const serializeValue = (value: unknown, field?: string, model?: string): string => {
+        const serializeValue = (value: unknown, field?: string): string => {
             if (value === undefined || value === null) {
                 return "NONE";
             }
             if (typeof value === "string") {
-                if (field && isRecordIdField(field, model) && isRecordIdString(value)) {
+                if (field && isRecordIdField(field) && isRecordIdString(value)) {
                     return value;
                 }
                 return JSON.stringify(value);
@@ -113,7 +160,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
                 return `d"${value.toISOString()}"`;
             }
             if (Array.isArray(value)) {
-                return `[${value.map(v => serializeValue(v, field, model)).join(", ")}]`;
+                return `[${value.map(v => serializeValue(v, field)).join(", ")}]`;
             }
             if (typeof value === "object" && value !== null) {
                 if ("tb" in value) {
@@ -126,7 +173,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
         const buildWhereClause = (
             where: Array<{ field: string; value: unknown; operator?: string }>,
-            model?: string
+            _model?: string
         ): string => {
             if (!where || where.length === 0) return "";
 
@@ -142,51 +189,37 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
                     switch (operator) {
                         case "eq":
-                            return `${field} = ${serializeValue(value, field, model)}`;
+                            return `${field} = ${serializeValue(value, field)}`;
                         case "ne":
-                            return `${field} != ${serializeValue(value, field, model)}`;
+                            return `${field} != ${serializeValue(value, field)}`;
                         case "gt":
-                            return `${field} > ${serializeValue(value, field, model)}`;
+                            return `${field} > ${serializeValue(value, field)}`;
                         case "gte":
-                            return `${field} >= ${serializeValue(value, field, model)}`;
+                            return `${field} >= ${serializeValue(value, field)}`;
                         case "lt":
-                            return `${field} < ${serializeValue(value, field, model)}`;
+                            return `${field} < ${serializeValue(value, field)}`;
                         case "lte":
-                            return `${field} <= ${serializeValue(value, field, model)}`;
+                            return `${field} <= ${serializeValue(value, field)}`;
                         case "in":
-                            return `${field} IN ${serializeValue(value, field, model)}`;
+                            return `${field} IN ${serializeValue(value, field)}`;
                         case "contains":
-                            return `${field} CONTAINS ${serializeValue(value, field, model)}`;
+                            return `${field} CONTAINS ${serializeValue(value, field)}`;
                         case "starts_with":
-                            return `string::starts_with(${field}, ${serializeValue(value, field, model)})`;
+                            return `string::starts_with(${field}, ${serializeValue(value, field)})`;
                         case "ends_with":
-                            return `string::ends_with(${field}, ${serializeValue(value, field, model)})`;
+                            return `string::ends_with(${field}, ${serializeValue(value, field)})`;
                         default:
-                            return `${field} = ${serializeValue(value, field, model)}`;
+                            return `${field} = ${serializeValue(value, field)}`;
                     }
                 })
                 .join(" AND ");
         };
 
-        return { isRecordIdField, serializeValue, buildWhereClause };
+        return { buildWhereClause };
     };
 
-    const createTransformValueForDB = (isRecordIdField: (field: string, model?: string) => boolean) => {
-        return (field: string, value: unknown, model?: string): unknown => {
-            if (value === undefined || value === null) {
-                return value;
-            }
-
-            if (typeof value === "string" && isRecordIdField(field, model) && field !== "id") {
-                const refModel = field.slice(0, -2);
-                if (!value.includes(":")) {
-                    return new StringRecordId(`${refModel}:${value}`);
-                }
-                return new StringRecordId(value);
-            }
-
-            return value;
-        };
+    const createTransformValueForDB = () => {
+        return (_field: string, value: unknown): unknown => value;
     };
 
     return createAdapterFactory({
@@ -200,26 +233,9 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
             supportsBooleans: true,
             supportsNumericIds: false,
         },
-        adapter: (({ debugLog, schema }) => {
-            const recordIdFieldsMap = new Map<string, Set<string>>();
-
-            if (schema) {
-                for (const [modelName, modelDef] of Object.entries(schema)) {
-                    const recordIdFields = new Set<string>(["id"]);
-                    const fields = (modelDef as { fields?: Record<string, { references?: { model: string } }> }).fields;
-                    if (fields) {
-                        for (const [fieldName, fieldDef] of Object.entries(fields)) {
-                            if (fieldDef.references?.model) {
-                                recordIdFields.add(fieldName);
-                            }
-                        }
-                    }
-                    recordIdFieldsMap.set(modelName, recordIdFields);
-                }
-            }
-
-            const { isRecordIdField, buildWhereClause } = createSerializationFunctions(recordIdFieldsMap);
-            const transformValueForDB = createTransformValueForDB(isRecordIdField);
+        adapter: (({ debugLog }) => {
+            const { buildWhereClause } = createSerializationFunctions();
+            const transformValueForDB = createTransformValueForDB();
 
             return {
                 create: async ({ model, data }) => {
@@ -240,7 +256,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
                     const output: Record<string, unknown> = {};
                     for (const [key, value] of Object.entries(result)) {
-                        output[key] = jsonify(value);
+                        output[key] = normalizeJsonValue(value);
                     }
 
                     return output;
@@ -262,7 +278,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
                     const output: Record<string, unknown> = {};
                     for (const [key, value] of Object.entries(record)) {
-                        output[key] = jsonify(value);
+                        output[key] = normalizeJsonValue(value);
                     }
 
                     return output;
@@ -297,7 +313,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
                     return (results || []).map((record) => {
                         const output: Record<string, unknown> = {};
                         for (const [key, value] of Object.entries(record)) {
-                            output[key] = jsonify(value);
+                            output[key] = normalizeJsonValue(value);
                         }
                         return output;
                     });
@@ -327,7 +343,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
                     const output: Record<string, unknown> = {};
                     for (const [key, value] of Object.entries(record)) {
-                        output[key] = jsonify(value);
+                        output[key] = normalizeJsonValue(value);
                     }
 
                     return output;

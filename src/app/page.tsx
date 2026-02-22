@@ -1,11 +1,19 @@
 import { ProcessCatalog } from "@/components/process/process-catalog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProcessCatalog } from "@/lib/process-data";
+import { getProcessCatalog, getUserStartedProcessProgress } from "@/lib/process-data";
+import { getServerSession } from "@/lib/session";
 
-export const revalidate = 120;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { processes, connectionError } = await getProcessCatalog();
+  const [{ processes, connectionError }, session] = await Promise.all([
+    getProcessCatalog(),
+    getServerSession(),
+  ]);
+  const startedProgress = await getUserStartedProcessProgress(session?.user?.id ?? null);
+  const startedProgressByProcessKey = Object.fromEntries(
+    startedProgress.map((entry) => [entry.processKey, entry.progressPercent]),
+  );
 
   if (connectionError) {
     return (
@@ -46,7 +54,11 @@ export default async function HomePage() {
           </p>
         </section>
       ) : (
-        <ProcessCatalog processes={processes} />
+        <ProcessCatalog
+          processes={processes}
+          userId={session?.user?.id ?? null}
+          startedProgressByProcessKey={startedProgressByProcessKey}
+        />
       )}
     </main>
   );

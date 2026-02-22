@@ -14,9 +14,17 @@ import {
   toRecordId,
   toSafeInt,
 } from "@/lib/surreal-utils";
+import type { TaskState } from "@/lib/types";
 
 const TIP_MAX_LENGTH = 1200;
 const FEEDBACK_MAX_LENGTH = 2000;
+const ALLOWED_TASK_STATES = new Set<TaskState>([
+  "none",
+  "half",
+  "done",
+  "not_necessary",
+  "denied",
+]);
 
 export type VoteDirection = "upvote" | "downvote";
 
@@ -50,9 +58,327 @@ async function ensureStartedTrackingSchema() {
     DEFINE TABLE IF NOT EXISTS started TYPE RELATION IN user OUT process SCHEMALESS;
     DEFINE INDEX IF NOT EXISTS started_user_process_idx ON started COLUMNS in, out UNIQUE;
     DEFINE FIELD IF NOT EXISTS created_at ON started TYPE datetime VALUE time::now();
+    DEFINE FIELD IF NOT EXISTS active ON started TYPE bool VALUE true;
+    DEFINE FIELD IF NOT EXISTS manual_task_state ON started TYPE object;
+    DEFINE FIELD IF NOT EXISTS progress_percent ON started TYPE number VALUE 0;
+    DEFINE FIELD IF NOT EXISTS resolved_count ON started TYPE number VALUE 0;
+    DEFINE FIELD IF NOT EXISTS completed_count ON started TYPE number VALUE 0;
+    DEFINE FIELD IF NOT EXISTS total_count ON started TYPE number VALUE 0;
+    DEFINE FIELD IF NOT EXISTS completion_points ON started TYPE number VALUE 0;
+    DEFINE FIELD IF NOT EXISTS completed ON started TYPE bool VALUE false;
+    DEFINE FIELD IF NOT EXISTS completed_at ON started TYPE option<datetime>;
+    DEFINE FIELD IF NOT EXISTS updated_at ON started TYPE datetime VALUE time::now();
   `);
 
   return db;
+}
+
+async function ensureStartedRelation(
+  userRecordId: string,
+  processRecordId: string,
+): Promise<{ db: Awaited<ReturnType<typeof ensureStartedTrackingSchema>>; startedRecordId: string }> {
+  const db = await ensureStartedTrackingSchema();
+
+  const existingRows = asArray<Record<string, unknown>>(
+    queryResult<unknown>(
+      await db.query(
+        `
+          SELECT id
+          FROM started
+          WHERE in = ${userRecordId}
+            AND out = ${processRecordId}
+          LIMIT 1;
+        `,
+      ),
+      0,
+    ),
+  );
+
+  const existingRecordId = toRecordId(existingRows[0]?.id);
+  if (existingRecordId) {
+    return { db, startedRecordId: existingRecordId };
+  }
+
+  const relatedRows = asArray<Record<string, unknown>>(
+    queryResult<unknown>(
+      await db.query(
+        `
+          RELATE ${userRecordId}->started->${processRecordId}
+          SET created_at = time::now(),
+              active = true,
+              manual_task_state = {},
+              progress_percent = 0,
+              resolved_count = 0,
+              completed_count = 0,
+              total_count = 0,
+              completion_points = 0,
+              completed = false,
+              completed_at = NONE,
+              updated_at = time::now();
+        `,
+      ),
+      0,
+    ),
+  );
+
+  const startedRecordId = toRecordId(relatedRows[0]?.id);
+  if (!startedRecordId) {
+    throw new Error("Unable to create started tracking relation.");
+  }
+
+  return { db, startedRecordId };
+}
+
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function sanitizeTaskStateMap(value: unknown): Record<string, TaskState> {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const input = value as Record<string, unknown>;
+  const output: Record<string, TaskState> = {};
+
+  for (const [taskKey, taskState] of Object.entries(input)) {
+    if (!isSafeRecordKey(taskKey) || typeof taskState !== "string") {
+      continue;
+    }
+
+    if (!ALLOWED_TASK_STATES.has(taskState as TaskState)) {
+      continue;
+    }
+
+    if (taskState === "none") {
+      continue;
+    }
+
+    output[taskKey] = taskState as TaskState;
+  }
+
+  return output;
+}
+
+interface SetQuestModeResult {
+  ok: boolean;
+}
+
+export async function setQuestModeAction(
+  processKeyInput: string,
+  options: {
+    started: boolean;
+    resetProgress?: boolean;
+  },
+): Promise<SetQuestModeResult> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { ok: false };
+    }
+
+    const userKey = stripTablePrefix(userId, "user");
+    const processKey = stripTablePrefix(String(processKeyInput).trim(), "process");
+
+    if (
+      !userKey ||
+      !processKey ||
+      !isSafeRecordKey(userKey) ||
+      !isSafeRecordKey(processKey)
+    ) {
+      return { ok: false };
+    }
+
+    const userRecordId = `user:${userKey}`;
+    const processRecordId = `process:${processKey}`;
+    const { db, startedRecordId } = await ensureStartedRelation(userRecordId, processRecordId);
+    const shouldReset = Boolean(options.resetProgress) || !options.started;
+
+    if (shouldReset) {
+      await db.query(
+        `
+          UPDATE ${startedRecordId}
+          SET active = $active,
+              updated_at = time::now(),
+              manual_task_state = {},
+              progress_percent = 0,
+              resolved_count = 0,
+              completed_count = 0,
+              total_count = 0,
+              completion_points = 0,
+              completed = false,
+              completed_at = NONE;
+        `,
+        { active: options.started },
+      );
+    } else {
+      await db.query(
+        `
+          UPDATE ${startedRecordId}
+          SET active = $active,
+              updated_at = time::now();
+        `,
+        { active: options.started },
+      );
+    }
+
+    revalidatePath("/");
+    revalidatePath(`/process/${processKey}`);
+    revalidatePath("/profile");
+    return { ok: true };
+  } catch (error) {
+    console.error("setQuestModeAction failed", error);
+    return { ok: false };
+  }
+}
+
+interface SyncQuestProgressInput {
+  processKey: string;
+  manualTaskStateByKey: Record<string, TaskState>;
+  progressPercent: number;
+  resolvedCount: number;
+  completedCount: number;
+  totalCount: number;
+  completionPoints: number;
+  completed: boolean;
+  completedAt?: string;
+}
+
+interface SyncQuestProgressResult {
+  ok: boolean;
+  completedAt?: string;
+}
+
+export async function syncQuestProgressAction(
+  input: SyncQuestProgressInput,
+): Promise<SyncQuestProgressResult> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { ok: false };
+    }
+
+    const userKey = stripTablePrefix(userId, "user");
+    const processKey = stripTablePrefix(String(input.processKey ?? "").trim(), "process");
+
+    if (
+      !userKey ||
+      !processKey ||
+      !isSafeRecordKey(userKey) ||
+      !isSafeRecordKey(processKey)
+    ) {
+      return { ok: false };
+    }
+
+    const userRecordId = `user:${userKey}`;
+    const processRecordId = `process:${processKey}`;
+    const { db, startedRecordId } = await ensureStartedRelation(userRecordId, processRecordId);
+    const sanitizedManualTaskState = sanitizeTaskStateMap(input.manualTaskStateByKey);
+    const progressPercent = clampPercent(toFiniteNumber(input.progressPercent, 0));
+    const resolvedCount = Math.max(0, Math.round(toFiniteNumber(input.resolvedCount, 0)));
+    const completedCount = Math.max(0, Math.round(toFiniteNumber(input.completedCount, 0)));
+    const totalCount = Math.max(0, Math.round(toFiniteNumber(input.totalCount, 0)));
+    const completionPoints = Math.max(0, toFiniteNumber(input.completionPoints, 0));
+    const completed = Boolean(input.completed);
+
+    const existingRows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(await db.query(`SELECT completed_at FROM ${startedRecordId};`), 0),
+    );
+
+    const existingCompletedAt = existingRows[0]?.completed_at;
+    const normalizedExistingCompletedAt =
+      typeof existingCompletedAt === "string" && existingCompletedAt.trim().length > 0
+        ? existingCompletedAt
+        : existingCompletedAt instanceof Date
+        ? existingCompletedAt.toISOString()
+        : undefined;
+    const persistedCompletedAt =
+      completed
+        ? (normalizedExistingCompletedAt
+            ? normalizedExistingCompletedAt
+            : typeof input.completedAt === "string" && input.completedAt.trim().length > 0
+            ? input.completedAt
+            : new Date().toISOString())
+        : null;
+
+    if (persistedCompletedAt) {
+      await db.query(
+        `
+          UPDATE ${startedRecordId}
+          SET active = true,
+              manual_task_state = $manualTaskState,
+              progress_percent = $progressPercent,
+              resolved_count = $resolvedCount,
+              completed_count = $completedCount,
+              total_count = $totalCount,
+              completion_points = $completionPoints,
+              completed = $completed,
+              completed_at = $completedAt,
+              updated_at = time::now();
+        `,
+        {
+          manualTaskState: sanitizedManualTaskState,
+          progressPercent,
+          resolvedCount,
+          completedCount,
+          totalCount,
+          completionPoints,
+          completed,
+          completedAt: persistedCompletedAt,
+        },
+      );
+    } else {
+      await db.query(
+        `
+          UPDATE ${startedRecordId}
+          SET active = true,
+              manual_task_state = $manualTaskState,
+              progress_percent = $progressPercent,
+              resolved_count = $resolvedCount,
+              completed_count = $completedCount,
+              total_count = $totalCount,
+              completion_points = $completionPoints,
+              completed = $completed,
+              completed_at = NONE,
+              updated_at = time::now();
+        `,
+        {
+          manualTaskState: sanitizedManualTaskState,
+          progressPercent,
+          resolvedCount,
+          completedCount,
+          totalCount,
+          completionPoints,
+          completed,
+        },
+      );
+    }
+
+    revalidatePath("/");
+    revalidatePath(`/process/${processKey}`);
+    revalidatePath("/profile");
+
+    return {
+      ok: true,
+      completedAt: persistedCompletedAt ?? undefined,
+    };
+  } catch (error) {
+    console.error("syncQuestProgressAction failed", error);
+    return { ok: false };
+  }
 }
 
 export async function recordQuestStartAction(processKeyInput: string) {
@@ -77,30 +403,17 @@ export async function recordQuestStartAction(processKeyInput: string) {
 
     const userRecordId = `user:${userKey}`;
     const processRecordId = `process:${processKey}`;
-    const db = await ensureStartedTrackingSchema();
+    const { db, startedRecordId } = await ensureStartedRelation(userRecordId, processRecordId);
 
-    const existingRows = asArray<Record<string, unknown>>(
-      queryResult<unknown>(
-        await db.query(
-          `
-            SELECT id
-            FROM started
-            WHERE in = ${userRecordId}
-              AND out = ${processRecordId}
-            LIMIT 1;
-          `,
-        ),
-        0,
-      ),
+    await db.query(
+      `
+        UPDATE ${startedRecordId}
+        SET active = true,
+            updated_at = time::now();
+      `,
     );
-
-    if (existingRows.length === 0) {
-      await db.query(`
-        RELATE ${userRecordId}->started->${processRecordId}
-        SET created_at = time::now();
-      `);
-      revalidatePath("/");
-    }
+    revalidatePath("/");
+    revalidatePath(`/process/${processKey}`);
   } catch (error) {
     console.error("recordQuestStartAction failed", error);
   }

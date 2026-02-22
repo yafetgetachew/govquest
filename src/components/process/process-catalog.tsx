@@ -5,16 +5,20 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
 import {
-  getQuestModeStorageKey,
-  getQuestProgressMetaStorageKey,
+  getQuestModeEventName,
+  getQuestProgressEventName,
+  type QuestModeEventDetail,
+  type QuestProgressEventDetail,
+  toUserScope,
 } from "@/components/process/quest-storage";
 import { Input } from "@/components/ui/input";
 import { TransitionLink } from "@/components/ui/transition-link";
-import { useSession } from "@/lib/auth-client";
 import type { ProcessNode } from "@/lib/types";
 
 interface ProcessCatalogProps {
   processes: ProcessNode[];
+  userId?: string | null;
+  startedProgressByProcessKey?: Record<string, number>;
 }
 
 interface StartedProcessSummary {
@@ -22,17 +26,22 @@ interface StartedProcessSummary {
   progressPercent: number;
 }
 
-export function ProcessCatalog({ processes }: ProcessCatalogProps) {
-  const { data: session, isPending: isSessionPending } = useSession();
+export function ProcessCatalog({
+  processes,
+  userId,
+  startedProgressByProcessKey = {},
+}: ProcessCatalogProps) {
   const [query, setQuery] = useState("");
-  const [startedSummaries, setStartedSummaries] = useState<StartedProcessSummary[]>([]);
+  const [progressByProcessKey, setProgressByProcessKey] = useState<Record<string, number>>(
+    startedProgressByProcessKey,
+  );
   const [placeholder, setPlaceholder] = useState("");
   const [typingPhraseIndex, setTypingPhraseIndex] = useState(0);
   const [isDeletingPlaceholder, setIsDeletingPlaceholder] = useState(false);
 
   const normalizedQuery = query.trim().toLowerCase();
   const hasQuery = normalizedQuery.length > 0;
-  const userId = session?.user?.id ?? null;
+  const userScope = useMemo(() => toUserScope(userId), [userId]);
   const typingPhrases = useMemo(() => {
     const basePhrases = ["Birth certificate", "driver licence"];
     const processPhrases = processes.map((process) => process.title);
@@ -74,51 +83,87 @@ export function ProcessCatalog({ processes }: ProcessCatalogProps) {
   }, [hasQuery, normalizedQuery, processes]);
 
   useEffect(() => {
-    if (isSessionPending) {
-      return;
-    }
+    setProgressByProcessKey(startedProgressByProcessKey);
+  }, [startedProgressByProcessKey]);
 
-    if (!userId) {
-      setStartedSummaries([]);
-      return;
-    }
-
-    const readStartedSummaries = () => {
-      const summaries = processes.flatMap((process) => {
-        try {
-          const started = window.localStorage.getItem(getQuestModeStorageKey(process.key, userId)) === "true";
-          if (!started) {
-            return [];
-          }
-
-          const rawMeta = window.localStorage.getItem(getQuestProgressMetaStorageKey(process.key, userId));
-          const parsed = parseProgressMeta(rawMeta);
-
-          return [{
-            process,
-            progressPercent: clampPercent(parsed?.progressPercent ?? 0),
-          }];
-        } catch {
+  const startedSummaries = useMemo<StartedProcessSummary[]>(
+    () =>
+      processes.flatMap((process) => {
+        const progressPercent = progressByProcessKey[process.key];
+        if (typeof progressPercent !== "number") {
           return [];
         }
-      });
 
-      setStartedSummaries(summaries);
+        return [{
+          process,
+          progressPercent: clampPercent(progressPercent),
+        }];
+      }),
+    [processes, progressByProcessKey],
+  );
+
+  useEffect(() => {
+    if (!userId) {
+      setProgressByProcessKey({});
+      return;
+    }
+
+    const onQuestModeChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<QuestModeEventDetail>;
+      if (customEvent.detail?.userScope !== userScope) {
+        return;
+      }
+
+      const processKey = customEvent.detail?.processKey;
+      if (!processKey) {
+        return;
+      }
+
+      setProgressByProcessKey((previous) => {
+        if (customEvent.detail.started) {
+          return {
+            ...previous,
+            [processKey]: previous[processKey] ?? 0,
+          };
+        }
+
+        const next = { ...previous };
+        delete next[processKey];
+        return next;
+      });
     };
 
-    readStartedSummaries();
+    const onQuestProgressChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<QuestProgressEventDetail>;
+      if (customEvent.detail?.userScope !== userScope) {
+        return;
+      }
 
-    const onStorage = () => readStartedSummaries();
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("govquest:quest-mode-changed", onStorage as EventListener);
-    window.addEventListener("govquest:quest-progress-changed", onStorage as EventListener);
+      const processKey = customEvent.detail?.processKey;
+      if (!processKey) {
+        return;
+      }
+
+      setProgressByProcessKey((previous) => {
+        if (!(processKey in previous)) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          [processKey]: clampPercent(customEvent.detail.progressPercent),
+        };
+      });
+    };
+
+    window.addEventListener(getQuestModeEventName(), onQuestModeChanged as EventListener);
+    window.addEventListener(getQuestProgressEventName(), onQuestProgressChanged as EventListener);
 
     return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("govquest:quest-mode-changed", onStorage as EventListener);
-      window.removeEventListener("govquest:quest-progress-changed", onStorage as EventListener);
+      window.removeEventListener(getQuestModeEventName(), onQuestModeChanged as EventListener);
+      window.removeEventListener(getQuestProgressEventName(), onQuestProgressChanged as EventListener);
     };
-  }, [isSessionPending, processes, userId]);
+  }, [userId, userScope]);
 
   useEffect(() => {
     if (typingPhrases.length === 0) {
@@ -224,23 +269,6 @@ export function ProcessCatalog({ processes }: ProcessCatalogProps) {
       </div>
     </section>
   );
-}
-
-function parseProgressMeta(raw: string | null): {
-  progressPercent?: number;
-} | null {
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    return {
-      progressPercent: typeof parsed.progressPercent === "number" ? parsed.progressPercent : 0,
-    };
-  } catch {
-    return null;
-  }
 }
 
 function clampPercent(value: number): number {
