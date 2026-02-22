@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, MessageCircleMore } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, FileText, MapPin } from "lucide-react";
 
 import {
   createTipAction,
@@ -10,6 +10,12 @@ import {
   type VoteActionResult,
   type VoteDirection,
 } from "@/app/actions";
+import {
+  appendCompletedProcessHistory,
+  getQuestProgressMetaStorageKey,
+  getQuestProgressStorageKey,
+  readQuestProgressMeta,
+} from "@/components/process/quest-storage";
 import {
   Accordion,
   AccordionContent,
@@ -35,6 +41,7 @@ interface QuestTreeProps {
   tasks: TaskNode[];
   tipsByTask: TipsByTask;
   isAuthenticated: boolean;
+  userId?: string | null;
   readOnly?: boolean;
   animateIn?: boolean;
 }
@@ -55,49 +62,73 @@ const TASK_STATE_OPTIONS: Array<{ value: TaskState; label: string }> = [
   { value: "not_necessary", label: "Not necessary" },
   { value: "denied", label: "Denied" },
 ];
+const QUEST_PROGRESS_POLICY_VERSION = "2026-02-22-v1";
 
 export function QuestTree({
   processKey,
   tasks,
   tipsByTask,
   isAuthenticated,
+  userId,
   readOnly = false,
   animateIn = false,
 }: QuestTreeProps) {
   const allTaskKeys = useMemo(() => collectUniqueTaskKeys(tasks), [tasks]);
-  const storageKey = useMemo(() => `quest-progress:${processKey}`, [processKey]);
-  const progressMetaKey = useMemo(() => `quest-progress-meta:${processKey}`, [processKey]);
-  const [taskStateByKey, setTaskStateByKey] = useState<Record<string, TaskState>>({});
+  const storageKey = useMemo(() => getQuestProgressStorageKey(processKey, userId), [processKey, userId]);
+  const progressMetaKey = useMemo(
+    () => getQuestProgressMetaStorageKey(processKey, userId),
+    [processKey, userId],
+  );
+  const [manualTaskStateByKey, setManualTaskStateByKey] = useState<Record<string, TaskState>>({});
+  const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(null);
+  const isStorageHydrated = hydratedStorageKey === storageKey;
+  const taskStateByKey = useMemo(
+    () => computeEffectiveTaskStateByKey(tasks, manualTaskStateByKey),
+    [tasks, manualTaskStateByKey],
+  );
 
   useEffect(() => {
     if (readOnly) {
-      setTaskStateByKey({});
+      setManualTaskStateByKey({});
+      setHydratedStorageKey(null);
       return;
     }
 
+    setHydratedStorageKey(null);
+
     try {
-      const stored = parseStoredTaskState(window.localStorage.getItem(storageKey));
+      const stored = parseStoredManualTaskState(window.localStorage.getItem(storageKey));
       const knownKeys = new Set(allTaskKeys);
       const filtered = Object.fromEntries(
         Object.entries(stored).filter(([taskKey]) => knownKeys.has(taskKey)),
       );
-      setTaskStateByKey(filtered);
+      setManualTaskStateByKey(filtered);
     } catch {
-      setTaskStateByKey({});
+      setManualTaskStateByKey({});
+    } finally {
+      setHydratedStorageKey(storageKey);
     }
   }, [allTaskKeys, readOnly, storageKey]);
 
   useEffect(() => {
-    if (readOnly) {
+    if (readOnly || !isStorageHydrated) {
       return;
     }
 
     try {
-      window.localStorage.setItem(storageKey, JSON.stringify(taskStateByKey));
+      window.localStorage.setItem(storageKey, serializeStoredManualTaskState(manualTaskStateByKey));
     } catch {}
-  }, [readOnly, storageKey, taskStateByKey]);
+  }, [isStorageHydrated, manualTaskStateByKey, readOnly, storageKey]);
 
   const resolvedCount = useMemo(
+    () =>
+      allTaskKeys.filter((taskKey) => {
+        const state = taskStateByKey[taskKey];
+        return state === "done" || state === "not_necessary" || state === "denied";
+      }).length,
+    [allTaskKeys, taskStateByKey],
+  );
+  const completedCount = useMemo(
     () =>
       allTaskKeys.filter((taskKey) => {
         const state = taskStateByKey[taskKey];
@@ -116,36 +147,84 @@ export function QuestTree({
 
   const totalCount = allTaskKeys.length;
   const progressPercent = totalCount === 0 ? 0 : Math.round((completionPoints / totalCount) * 100);
+  const isProcessCompleted = totalCount > 0 && completedCount === totalCount;
   const completionText =
     completionPoints % 1 === 0 ? completionPoints.toFixed(0) : completionPoints.toFixed(1);
+  const orderedTaskKeys = useMemo(() => collectOrderedTaskKeys(tasks), [tasks]);
+  const activeTaskKey = useMemo(() => {
+    const inProgressTaskKey = orderedTaskKeys.find(
+      (taskKey) => taskStateByKey[taskKey] === "half",
+    );
+
+    if (inProgressTaskKey) {
+      return inProgressTaskKey;
+    }
+
+    const nextNotStartedTaskKey = orderedTaskKeys.find(
+      (taskKey) => (taskStateByKey[taskKey] ?? "none") === "none",
+    );
+    return nextNotStartedTaskKey ?? null;
+  }, [orderedTaskKeys, taskStateByKey]);
 
   useEffect(() => {
-    if (readOnly) {
+    if (readOnly || !isStorageHydrated) {
       return;
     }
 
     try {
+      const previousMeta = readQuestProgressMeta(processKey, userId);
+      const completedAt = isProcessCompleted
+        ? previousMeta?.completedAt ?? new Date().toISOString()
+        : undefined;
+
       window.localStorage.setItem(
         progressMetaKey,
         JSON.stringify({
           processKey,
           progressPercent,
           resolvedCount,
+          completedCount,
           totalCount,
           completionPoints,
+          completed: isProcessCompleted,
+          completedAt,
           updatedAt: new Date().toISOString(),
         }),
       );
+
+      if (isProcessCompleted && !previousMeta?.completed) {
+        appendCompletedProcessHistory(
+          {
+            processKey,
+            completedAt: completedAt ?? new Date().toISOString(),
+            progressPercent: 100,
+          },
+          userId,
+        );
+      }
+
       window.dispatchEvent(
         new CustomEvent("govquest:quest-progress-changed", {
           detail: { processKey, progressPercent },
         }),
       );
     } catch {}
-  }, [completionPoints, processKey, progressMetaKey, progressPercent, readOnly, resolvedCount, totalCount]);
+  }, [
+    completionPoints,
+    completedCount,
+    isProcessCompleted,
+    processKey,
+    progressMetaKey,
+    progressPercent,
+    readOnly,
+    resolvedCount,
+    userId,
+    isStorageHydrated,
+    totalCount,
+  ]);
 
   const setTaskState = (taskKey: string, state: TaskState) => {
-    setTaskStateByKey((previous) => {
+    setManualTaskStateByKey((previous) => {
       if (state === "none") {
         if (!(taskKey in previous)) {
           return previous;
@@ -202,6 +281,7 @@ export function QuestTree({
         animateIn={animateIn}
         taskStateByKey={taskStateByKey}
         onTaskStateChange={setTaskState}
+        activeTaskKey={activeTaskKey}
       />
     </div>
   );
@@ -217,6 +297,7 @@ function ReadOnlyTaskList({ tasks, level }: { tasks: TaskNode[]; level: number }
         >
           <p className="font-semibold text-foreground">{task.title}</p>
           <p className="mt-1 text-xs text-muted-foreground">{task.description}</p>
+          <TaskContextSummary task={task} className="mt-2" includeDescription={false} />
           <p className="mt-1 text-xs text-muted-foreground">Time estimate: {estimateTaskTime(task)}</p>
           {task.children.length > 0 ? (
             <div className="mt-3 space-y-2">
@@ -240,6 +321,7 @@ function TaskAccordion({
   animateIn,
   taskStateByKey,
   onTaskStateChange,
+  activeTaskKey,
 }: {
   tasks: TaskNode[];
   tipsByTask: TipsByTask;
@@ -250,6 +332,7 @@ function TaskAccordion({
   animateIn: boolean;
   taskStateByKey: Record<string, TaskState>;
   onTaskStateChange: (taskKey: string, state: TaskState) => void;
+  activeTaskKey: string | null;
 }) {
   let runningSequence = sequenceOffset;
 
@@ -261,6 +344,7 @@ function TaskAccordion({
         const tips = tipsByTask[task.key] ?? [];
         const taskState = taskStateByKey[task.key] ?? "none";
         const isDone = !readOnly && taskState === "done";
+        const isActiveTask = !readOnly && activeTaskKey === task.key;
         const canPostTip =
           taskState === "done" || taskState === "not_necessary" || taskState === "denied";
         const timeEstimate = estimateTaskTime(task);
@@ -270,7 +354,8 @@ function TaskAccordion({
             key={task.id}
             value={`${task.id}-${level}`}
             className={cn(
-              "relative ml-6 overflow-visible border border-border/70 bg-card/90",
+              "relative ml-6 overflow-visible border border-border/70 bg-card/90 data-[state=open]:z-20",
+              isActiveTask && "border-primary/45 bg-primary/[0.05]",
               animateIn && "opacity-0 animate-[gvt-task-reveal_360ms_ease-out_forwards]",
             )}
             style={animateIn ? { animationDelay: `${itemSequence * 120}ms` } : undefined}
@@ -281,8 +366,13 @@ function TaskAccordion({
               tone={readOnly ? "default" : toLineageTone(taskState)}
               className="-left-6"
             />
-            <AccordionTrigger className="group">
-              <div className="pr-2">
+            <AccordionTrigger
+              className={cn(
+                "group",
+                isActiveTask && "gvt-task-sheen",
+              )}
+            >
+              <div className="relative z-10 pr-2">
                 <p
                   className={cn(
                     "font-semibold text-foreground",
@@ -294,29 +384,28 @@ function TaskAccordion({
                 <p className="mt-1 text-xs text-muted-foreground group-data-[state=open]:hidden">
                   Time estimate: {timeEstimate}
                 </p>
-                <p className="mt-1 hidden text-xs text-muted-foreground group-data-[state=open]:block">
-                  {task.description}
-                </p>
               </div>
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-4">
-                {!readOnly ? (
-                  <>
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Status</p>
+                <div className={cn("flex gap-3", !readOnly && "items-start justify-between")}>
+                  <TaskContextSummary
+                    task={task}
+                    includeDescription
+                    className={cn(!readOnly && "min-w-0 flex-1")}
+                  />
+                  {!readOnly ? (
+                    <div className="shrink-0">
                       <TaskStateSelector
                         value={taskState}
                         onChange={(state) => onTaskStateChange(task.key, state)}
                       />
                     </div>
-
+                  ) : null}
+                </div>
+                {!readOnly ? (
+                  <>
                     <section className="space-y-3 border-t border-border/70 pt-3">
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <MessageCircleMore className="h-4 w-4 text-primary" />
-                        Tips
-                      </div>
-
                       {canPostTip ? (
                         isAuthenticated ? (
                           <form
@@ -345,7 +434,7 @@ function TaskAccordion({
 
                       {tips.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                          No tips yet for this step. Be the first to help someone.
+                          No tips yet for this step. Finish the process and help others by sharing your experience
                         </p>
                       ) : (
                         <TipCarousel tips={tips} isAuthenticated={isAuthenticated} />
@@ -367,6 +456,7 @@ function TaskAccordion({
                       animateIn={animateIn}
                       taskStateByKey={taskStateByKey}
                       onTaskStateChange={onTaskStateChange}
+                      activeTaskKey={activeTaskKey}
                     />
                   </section>
                 ) : null}
@@ -376,6 +466,83 @@ function TaskAccordion({
         );
       })}
     </Accordion>
+  );
+}
+
+function TaskContextSummary({
+  task,
+  includeDescription,
+  className,
+}: {
+  task: TaskNode;
+  includeDescription: boolean;
+  className?: string;
+}) {
+  const hasMeta = task.location || task.links.length > 0 || task.requiredDocuments.length > 0;
+
+  if (!includeDescription && !hasMeta) {
+    return null;
+  }
+
+  return (
+    <section className={cn("space-y-2", className)}>
+      {includeDescription ? (
+        <p className="text-sm text-muted-foreground">{task.description}</p>
+      ) : null}
+      {task.location ? (
+        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5" />
+          {task.location}
+        </p>
+      ) : null}
+      {task.links.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {task.links.map((link) => (
+            <a
+              key={`${task.key}-${link.url}`}
+              href={link.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex items-center gap-1.5 text-foreground underline underline-offset-4"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {link.label}
+            </a>
+          ))}
+        </div>
+      ) : null}
+      {task.requiredDocuments.length > 0 ? (
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground">
+            {task.requiredDocumentsMode === "one_of"
+              ? "Requires one of these documents"
+              : "Requires all of these documents"}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {task.requiredDocuments.map((document, index) =>
+              document.processKey ? (
+                <Link
+                  key={`${task.key}-${document.name}-${index}`}
+                  href={`/process/${document.processKey}`}
+                  className="inline-flex items-center gap-1.5 border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/15"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  {document.name}
+                </Link>
+              ) : (
+                <span
+                  key={`${task.key}-${document.name}-${index}`}
+                  className="inline-flex items-center gap-1.5 border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  {document.name}
+                </span>
+              ),
+            )}
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -540,7 +707,6 @@ function TipCarousel({
             <p className="text-xs text-muted-foreground">
               Top by upvotes · {activeTipIndex + 1}/{rankedTips.length}
             </p>
-            <span className="text-xs text-muted-foreground">Tips</span>
           </div>
         </div>
       </button>
@@ -745,7 +911,7 @@ function TaskStateSelector({
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className={cn("relative", open && "z-[90]")}>
       <Button
         type="button"
         size="sm"
@@ -763,7 +929,7 @@ function TaskStateSelector({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-44 rounded-none border border-border bg-card p-1"
+          className="absolute right-0 z-[95] mt-2 w-44 rounded-none border border-border bg-card p-1"
         >
           {TASK_STATE_OPTIONS.map((option) => (
             <button
@@ -906,6 +1072,26 @@ function estimateTaskTime(task: TaskNode): string {
   return "50+ min";
 }
 
+function collectOrderedTaskKeys(tasks: TaskNode[]): string[] {
+  const keys: string[] = [];
+
+  const visit = (input: TaskNode[]) => {
+    for (const task of input) {
+      if (task.key) {
+        keys.push(task.key);
+      }
+
+      if (task.children.length > 0) {
+        visit(task.children);
+      }
+    }
+  };
+
+  visit(tasks);
+
+  return keys;
+}
+
 function collectUniqueTaskKeys(tasks: TaskNode[]): string[] {
   const keys = new Set<string>();
 
@@ -936,7 +1122,105 @@ function countTaskNodes(tasks: TaskNode[]): number {
   return total;
 }
 
-function parseStoredTaskState(raw: string | null): Record<string, TaskState> {
+function computeEffectiveTaskStateByKey(
+  tasks: TaskNode[],
+  manualTaskStateByKey: Record<string, TaskState>,
+): Record<string, TaskState> {
+  const effectiveTaskStateByKey: Record<string, TaskState> = {};
+
+  const applyInheritance = (nodes: TaskNode[], inheritedState?: TaskState) => {
+    for (const node of nodes) {
+      if (!node.key) {
+        applyInheritance(node.children, inheritedState);
+        continue;
+      }
+
+      const manualState = manualTaskStateByKey[node.key];
+      const hasManualState = isTaskState(manualState) && manualState !== "none";
+      const nextState = hasManualState ? manualState : inheritedState ?? "none";
+      effectiveTaskStateByKey[node.key] = nextState;
+
+      const inheritedForChildren = hasManualState
+        ? isTerminalTaskState(manualState)
+          ? manualState
+          : undefined
+        : inheritedState;
+
+      applyInheritance(node.children, inheritedForChildren);
+    }
+  };
+
+  const applyAggregation = (nodes: TaskNode[]) => {
+    for (const node of nodes) {
+      applyAggregation(node.children);
+
+      if (!node.key) {
+        continue;
+      }
+
+      const manualState = manualTaskStateByKey[node.key];
+      if (isTaskState(manualState) && manualState !== "none") {
+        effectiveTaskStateByKey[node.key] = manualState;
+        continue;
+      }
+
+      if (node.children.length === 0) {
+        continue;
+      }
+
+      const childStates = node.children
+        .map((child) => (child.key ? effectiveTaskStateByKey[child.key] : null))
+        .filter((state): state is TaskState => state !== null);
+
+      if (childStates.length === 0) {
+        continue;
+      }
+
+      effectiveTaskStateByKey[node.key] = aggregateTaskStateFromChildren(childStates);
+    }
+  };
+
+  applyInheritance(tasks);
+  applyAggregation(tasks);
+
+  return effectiveTaskStateByKey;
+}
+
+function aggregateTaskStateFromChildren(childStates: TaskState[]): TaskState {
+  const hasHalf = childStates.includes("half");
+  const hasNone = childStates.includes("none");
+  const terminalStates = childStates.filter(isTerminalTaskState);
+  const areAllTerminal = terminalStates.length === childStates.length;
+
+  if (areAllTerminal) {
+    const hasDenied = terminalStates.includes("denied");
+
+    if (hasDenied) {
+      const uniqueTerminalStates = new Set(terminalStates);
+      return uniqueTerminalStates.size === 1 ? "denied" : "half";
+    }
+
+    const uniqueTerminalStates = new Set(terminalStates);
+
+    if (uniqueTerminalStates.size === 1) {
+      return terminalStates[0];
+    }
+
+    return "done";
+  }
+
+  if (hasHalf || (hasNone && terminalStates.length > 0)) {
+    return "half";
+  }
+
+  if (hasNone) {
+    return "none";
+  }
+
+  return "half";
+}
+
+function parseStoredManualTaskState(raw: string | null): Record<string, TaskState> {
   if (!raw) {
     return {};
   }
@@ -959,10 +1243,18 @@ function parseStoredTaskState(raw: string | null): Record<string, TaskState> {
     return {};
   }
 
+  const parsedRecord = parsed as Record<string, unknown>;
+  const manualCandidate =
+    parsedRecord.version === 2 &&
+    parsedRecord.manual &&
+    typeof parsedRecord.manual === "object"
+      ? (parsedRecord.manual as Record<string, unknown>)
+      : parsedRecord;
+
   const taskStateByKey: Record<string, TaskState> = {};
 
-  for (const [taskKey, state] of Object.entries(parsed)) {
-    if (typeof taskKey !== "string" || !isTaskState(state)) {
+  for (const [taskKey, state] of Object.entries(manualCandidate)) {
+    if (typeof taskKey !== "string" || !isTaskState(state) || state === "none") {
       continue;
     }
 
@@ -970,6 +1262,27 @@ function parseStoredTaskState(raw: string | null): Record<string, TaskState> {
   }
 
   return taskStateByKey;
+}
+
+function serializeStoredManualTaskState(taskStateByKey: Record<string, TaskState>): string {
+  const manualTaskStateByKey: Record<string, TaskState> = {};
+
+  for (const [taskKey, state] of Object.entries(taskStateByKey)) {
+    if (isTaskState(state) && state !== "none") {
+      manualTaskStateByKey[taskKey] = state;
+    }
+  }
+
+  return JSON.stringify({
+    version: 2,
+    policyVersion: QUEST_PROGRESS_POLICY_VERSION,
+    manual: manualTaskStateByKey,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+function isTerminalTaskState(state: TaskState): state is "done" | "not_necessary" | "denied" {
+  return state === "done" || state === "not_necessary" || state === "denied";
 }
 
 function isTaskState(value: unknown): value is TaskState {

@@ -25,27 +25,27 @@
 }
 
 :root {
-  --background: 210 28% 96%;
-  --foreground: 220 24% 22%;
+  --background: 42 36% 96%;
+  --foreground: 214 24% 20%;
 
   --card: 0 0% 100%;
-  --card-foreground: 220 30% 20%;
+  --card-foreground: 214 26% 20%;
 
-  --muted: 210 24% 92%;
-  --muted-foreground: 220 16% 44%;
+  --muted: 40 24% 91%;
+  --muted-foreground: 214 15% 40%;
 
-  --border: 214 30% 88%;
-  --input: 214 30% 88%;
-  --ring: 213 84% 60%;
+  --border: 209 20% 84%;
+  --input: 209 20% 84%;
+  --ring: 167 56% 42%;
 
-  --primary: 214 84% 58%;
+  --primary: 167 55% 37%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 161 78% 45%;
+  --secondary: 203 68% 46%;
   --secondary-foreground: 0 0% 100%;
 
-  --accent: 43 96% 55%;
-  --accent-foreground: 220 28% 16%;
+  --accent: 21 86% 57%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 78% 63%;
   --destructive-foreground: 0 0% 100%;
@@ -55,27 +55,27 @@
 }
 
 .dark {
-  --background: 222 21% 12%;
-  --foreground: 210 20% 92%;
+  --background: 215 23% 11%;
+  --foreground: 44 26% 94%;
 
-  --card: 222 18% 15%;
-  --card-foreground: 210 20% 92%;
+  --card: 215 18% 14%;
+  --card-foreground: 44 26% 94%;
 
-  --muted: 222 14% 20%;
-  --muted-foreground: 214 14% 70%;
+  --muted: 215 14% 19%;
+  --muted-foreground: 214 12% 72%;
 
-  --border: 220 12% 28%;
-  --input: 220 12% 28%;
-  --ring: 214 90% 66%;
+  --border: 216 12% 30%;
+  --input: 216 12% 30%;
+  --ring: 167 62% 58%;
 
-  --primary: 212 92% 66%;
-  --primary-foreground: 222 28% 10%;
+  --primary: 167 62% 58%;
+  --primary-foreground: 214 30% 10%;
 
-  --secondary: 164 62% 45%;
-  --secondary-foreground: 222 28% 10%;
+  --secondary: 203 78% 62%;
+  --secondary-foreground: 214 30% 10%;
 
-  --accent: 44 94% 60%;
-  --accent-foreground: 222 28% 10%;
+  --accent: 24 88% 66%;
+  --accent-foreground: 214 30% 10%;
 
   --destructive: 0 80% 64%;
   --destructive-foreground: 0 0% 100%;
@@ -83,28 +83,28 @@
 
 :root[data-contrast="high"] {
   --background: 0 0% 100%;
-  --foreground: 220 30% 10%;
+  --foreground: 214 36% 8%;
   --card: 0 0% 100%;
-  --card-foreground: 220 30% 10%;
-  --muted: 220 20% 93%;
-  --muted-foreground: 220 24% 18%;
-  --border: 220 20% 60%;
-  --primary: 220 86% 46%;
-  --secondary: 159 82% 34%;
-  --accent: 42 97% 45%;
+  --card-foreground: 214 36% 8%;
+  --muted: 210 18% 92%;
+  --muted-foreground: 214 28% 16%;
+  --border: 214 18% 52%;
+  --primary: 167 74% 30%;
+  --secondary: 203 84% 38%;
+  --accent: 18 88% 44%;
 }
 
 .dark[data-contrast="high"] {
-  --background: 222 25% 8%;
-  --foreground: 210 30% 96%;
-  --card: 222 23% 10%;
-  --card-foreground: 210 30% 96%;
-  --muted: 222 14% 16%;
-  --muted-foreground: 210 20% 80%;
-  --border: 220 12% 42%;
-  --primary: 212 96% 72%;
-  --secondary: 164 70% 52%;
-  --accent: 44 96% 64%;
+  --background: 214 30% 7%;
+  --foreground: 50 30% 97%;
+  --card: 214 25% 9%;
+  --card-foreground: 50 30% 97%;
+  --muted: 214 16% 15%;
+  --muted-foreground: 214 18% 82%;
+  --border: 214 12% 45%;
+  --primary: 167 82% 68%;
+  --secondary: 203 92% 70%;
+  --accent: 24 92% 72%;
 }
 
 @layer base {
@@ -194,6 +194,29 @@
     }
   }
 
+  @keyframes gvt-task-sheen {
+    0% {
+      transform: translate3d(-220%, 0, 0);
+    }
+    100% {
+      transform: translate3d(360%, 0, 0);
+    }
+  }
+
+  @keyframes gvt-search-border-sheen {
+    0% {
+      transform: translate3d(-185%, 0, 0);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(240%, 0, 0);
+      opacity: 0;
+    }
+  }
+
   @keyframes gvt-vote-pop {
     0% {
       transform: scale(1);
@@ -225,6 +248,63 @@
     animation: gvt-star-twinkle 3.3s ease-in-out infinite;
   }
 
+  .gvt-task-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gvt-task-sheen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    left: -62%;
+    width: 62%;
+    pointer-events: none;
+    will-change: transform;
+    mix-blend-mode: screen;
+    opacity: 0.72;
+    filter: blur(0.8px);
+    background: linear-gradient(
+      112deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.008) 16%,
+      rgba(255, 255, 255, 0.028) 30%,
+      rgba(255, 255, 255, 0.065) 42%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.1) 58%,
+      rgba(255, 255, 255, 0.065) 70%,
+      rgba(255, 255, 255, 0.028) 82%,
+      rgba(255, 255, 255, 0.008) 92%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: gvt-task-sheen 3.6s linear 1;
+  }
+
+  .gvt-search-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gvt-search-sheen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    pointer-events: none;
+    z-index: 1;
+    background: linear-gradient(
+      108deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.5) 48%,
+      rgba(255, 255, 255, 0.18) 54%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: gvt-search-border-sheen 1.9s ease-out 0.2s 1 both;
+  }
+
   .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -235,5 +315,23 @@
     border: 1px solid hsl(var(--border));
     background: hsl(var(--card) / 0.92);
     box-shadow: none;
+  }
+
+  .gvt-home-wordmark {
+    color: hsl(var(--primary));
+  }
+
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .gvt-home-wordmark {
+      background-image: url("/govquest-wordmark-art.jpg");
+      background-size: 190% auto;
+      background-position: center;
+      background-repeat: repeat;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+      text-shadow: none;
+    }
   }
 }

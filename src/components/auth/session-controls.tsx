@@ -30,7 +30,12 @@ export function SessionControls() {
 
   return (
     <div className="flex items-center justify-end gap-2">
-      <p className="text-sm text-muted-foreground">{username}</p>
+      <Link
+        href="/profile"
+        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        {username}
+      </Link>
       <Button
         variant="ghost"
         size="sm"

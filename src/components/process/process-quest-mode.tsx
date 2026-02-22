@@ -11,6 +11,7 @@ interface ProcessQuestModeProps {
   tasks: TaskNode[];
   tipsByTask: TipsByTask;
   isAuthenticated: boolean;
+  userId?: string | null;
 }
 
 export function ProcessQuestMode({
@@ -18,6 +19,7 @@ export function ProcessQuestMode({
   tasks,
   tipsByTask,
   isAuthenticated,
+  userId,
 }: ProcessQuestModeProps) {
   if (!isAuthenticated) {
     return (
@@ -28,12 +30,13 @@ export function ProcessQuestMode({
           tipsByTask={tipsByTask}
           isAuthenticated={false}
           readOnly
+          userId={null}
         />
       </section>
     );
   }
 
-  const { hydrated, started } = useQuestMode(processKey);
+  const { hydrated, started } = useQuestMode(processKey, userId);
   const [isStarting, setIsStarting] = useState(false);
   const [revealSequence, setRevealSequence] = useState(0);
   const hasInitialized = useRef(false);
@@ -76,7 +79,7 @@ export function ProcessQuestMode({
   if (!started) {
     return (
       <section className="py-2">
-        <p className="text-sm text-muted-foreground">Start quest mode to track progress and update task status.</p>
+        <p className="text-sm text-muted-foreground">Start process to track progress and update task status.</p>
       </section>
     );
   }
@@ -98,6 +101,7 @@ export function ProcessQuestMode({
         tipsByTask={tipsByTask}
         isAuthenticated
         animateIn={revealSequence > 0}
+        userId={userId}
       />
     </section>
   );

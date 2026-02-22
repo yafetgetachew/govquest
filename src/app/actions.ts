@@ -43,6 +43,69 @@ async function getCurrentUserId(): Promise<string | null> {
   }
 }
 
+async function ensureStartedTrackingSchema() {
+  const db = await getSurrealClient();
+
+  await db.query(`
+    DEFINE TABLE IF NOT EXISTS started TYPE RELATION IN user OUT process SCHEMALESS;
+    DEFINE INDEX IF NOT EXISTS started_user_process_idx ON started COLUMNS in, out UNIQUE;
+    DEFINE FIELD IF NOT EXISTS created_at ON started TYPE datetime VALUE time::now();
+  `);
+
+  return db;
+}
+
+export async function recordQuestStartAction(processKeyInput: string) {
+  try {
+    const userId = await getCurrentUserId();
+
+    if (!userId) {
+      return;
+    }
+
+    const userKey = stripTablePrefix(userId, "user");
+    const processKey = stripTablePrefix(String(processKeyInput).trim(), "process");
+
+    if (
+      !userKey ||
+      !processKey ||
+      !isSafeRecordKey(userKey) ||
+      !isSafeRecordKey(processKey)
+    ) {
+      return;
+    }
+
+    const userRecordId = `user:${userKey}`;
+    const processRecordId = `process:${processKey}`;
+    const db = await ensureStartedTrackingSchema();
+
+    const existingRows = asArray<Record<string, unknown>>(
+      queryResult<unknown>(
+        await db.query(
+          `
+            SELECT id
+            FROM started
+            WHERE in = ${userRecordId}
+              AND out = ${processRecordId}
+            LIMIT 1;
+          `,
+        ),
+        0,
+      ),
+    );
+
+    if (existingRows.length === 0) {
+      await db.query(`
+        RELATE ${userRecordId}->started->${processRecordId}
+        SET created_at = time::now();
+      `);
+      revalidatePath("/");
+    }
+  } catch (error) {
+    console.error("recordQuestStartAction failed", error);
+  }
+}
+
 export async function createTipAction(formData: FormData) {
   try {
     const userId = await getCurrentUserId();
