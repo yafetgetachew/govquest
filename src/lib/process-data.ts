@@ -357,8 +357,8 @@ export async function getUserQuestState(
       totalCount: Math.max(0, Math.round(toSafeNumber(row.total_count))),
       completionPoints: Math.max(0, toSafeNumber(row.completion_points)),
       completed: Boolean(row.completed),
-      completedAt: toOptionalString(row.completed_at),
-      updatedAt: toOptionalString(row.updated_at),
+      completedAt: toOptionalDateTimeString(row.completed_at),
+      updatedAt: toOptionalDateTimeString(row.updated_at),
     };
   } catch {
     return emptyState;
@@ -431,12 +431,11 @@ export async function getUserCompletedProcessHistory(
       queryResult<unknown>(
         await db.query(
           `
-            SELECT out, completed_at, progress_percent
+            SELECT out, completed_at, updated_at, progress_percent
             FROM started
             WHERE in = user:${userKey}
               AND completed = true
-              AND completed_at != NONE
-            ORDER BY completed_at DESC
+            ORDER BY (IF completed_at = NONE THEN updated_at ELSE completed_at END) DESC
             LIMIT 200;
           `,
         ),
@@ -447,7 +446,8 @@ export async function getUserCompletedProcessHistory(
     return rows.flatMap((row) => {
       const processId = toRecordId(row.out);
       const processKey = toRecordKey(processId);
-      const completedAt = toOptionalString(row.completed_at);
+      const completedAt =
+        toOptionalDateTimeString(row.completed_at) ?? toOptionalDateTimeString(row.updated_at);
 
       if (!processKey || !completedAt) {
         return [];
@@ -913,6 +913,19 @@ function toOptionalString(value: unknown): string | undefined {
 
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : undefined;
+}
+
+function toOptionalDateTimeString(value: unknown): string | undefined {
+  if (value instanceof Date) {
+    return Number.isFinite(value.getTime()) ? value.toISOString() : undefined;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
+  return undefined;
 }
 
 function toExternalLinks(value: unknown): ExternalLink[] {
