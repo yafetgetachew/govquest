@@ -51,33 +51,11 @@ async function getCurrentUserId(): Promise<string | null> {
   }
 }
 
-async function ensureStartedTrackingSchema() {
-  const db = await getSurrealClient();
-
-  await db.query(`
-    DEFINE TABLE IF NOT EXISTS started TYPE RELATION IN user OUT process SCHEMALESS;
-    DEFINE INDEX IF NOT EXISTS started_user_process_idx ON started COLUMNS in, out UNIQUE;
-    DEFINE FIELD IF NOT EXISTS created_at ON started TYPE datetime VALUE time::now();
-    DEFINE FIELD IF NOT EXISTS active ON started TYPE bool VALUE true;
-    DEFINE FIELD IF NOT EXISTS manual_task_state ON started TYPE object;
-    DEFINE FIELD IF NOT EXISTS progress_percent ON started TYPE number VALUE 0;
-    DEFINE FIELD IF NOT EXISTS resolved_count ON started TYPE number VALUE 0;
-    DEFINE FIELD IF NOT EXISTS completed_count ON started TYPE number VALUE 0;
-    DEFINE FIELD IF NOT EXISTS total_count ON started TYPE number VALUE 0;
-    DEFINE FIELD IF NOT EXISTS completion_points ON started TYPE number VALUE 0;
-    DEFINE FIELD IF NOT EXISTS completed ON started TYPE bool VALUE false;
-    DEFINE FIELD IF NOT EXISTS completed_at ON started TYPE option<datetime>;
-    DEFINE FIELD IF NOT EXISTS updated_at ON started TYPE datetime VALUE time::now();
-  `);
-
-  return db;
-}
-
 async function ensureStartedRelation(
   userRecordId: string,
   processRecordId: string,
-): Promise<{ db: Awaited<ReturnType<typeof ensureStartedTrackingSchema>>; startedRecordId: string }> {
-  const db = await ensureStartedTrackingSchema();
+): Promise<{ db: Awaited<ReturnType<typeof getSurrealClient>>; startedRecordId: string }> {
+  const db = await getSurrealClient();
 
   const existingRows = asArray<Record<string, unknown>>(
     queryResult<unknown>(
@@ -527,7 +505,7 @@ export async function voteTipAction(formData: FormData): Promise<VoteActionResul
       queryResult<unknown>(
         await db.query(
           `
-            SELECT id, direction
+            SELECT direction
             FROM voted
             WHERE in = ${userRecordId}
               AND out = ${tipRecordId}
@@ -538,96 +516,104 @@ export async function voteTipAction(formData: FormData): Promise<VoteActionResul
       ),
     );
 
-    const existingVote = existingVoteRows[0];
-    const existingDirection = String(existingVote?.direction ?? "");
-    const existingVoteId = toRecordId(existingVote?.id);
-    const existingVoteKey = stripTablePrefix(existingVoteId, "voted");
-    const voteRecordId =
-      existingVoteKey && isSafeRecordKey(existingVoteKey) ? `voted:${existingVoteKey}` : null;
+    const existingDirection = String(existingVoteRows[0]?.direction ?? "");
 
-    if (!existingVote) {
-      if (direction === "upvote") {
-        await db.query(`UPDATE ${tipRecordId} SET upvotes += 1;`);
-      } else {
-        await db.query(`UPDATE ${tipRecordId} SET downvotes += 1;`);
-      }
+    await db.query(
+      `
+        BEGIN TRANSACTION;
 
-      await db.query(
-        `
+        LET $existing = (
+          SELECT id, direction
+          FROM voted
+          WHERE in = ${userRecordId}
+            AND out = ${tipRecordId}
+          LIMIT 1
+        );
+
+        IF array::len($existing) = 0 {
           RELATE ${userRecordId}->voted->${tipRecordId}
           SET direction = $direction,
               created_at = time::now(),
               updated_at = time::now();
-        `,
-        { direction },
-      );
-    } else if (existingDirection === direction) {
-      if (direction === "upvote") {
-        await db.query(`UPDATE ${tipRecordId} SET upvotes -= 1;`);
-      } else {
-        await db.query(`UPDATE ${tipRecordId} SET downvotes -= 1;`);
-      }
+        } ELSE IF $existing[0].direction = $direction {
+          DELETE $existing[0].id;
+        } ELSE {
+          UPDATE $existing[0].id
+          SET direction = $direction,
+              updated_at = time::now();
+        };
 
-      if (voteRecordId) {
-        await db.query(`DELETE ${voteRecordId};`);
-      }
-    } else {
-      if (existingDirection === "upvote") {
-        await db.query(`UPDATE ${tipRecordId} SET upvotes -= 1;`);
-      } else if (existingDirection === "downvote") {
-        await db.query(`UPDATE ${tipRecordId} SET downvotes -= 1;`);
-      }
-
-      if (direction === "upvote") {
-        await db.query(`UPDATE ${tipRecordId} SET upvotes += 1;`);
-      } else {
-        await db.query(`UPDATE ${tipRecordId} SET downvotes += 1;`);
-      }
-
-      if (voteRecordId) {
-        await db.query(
-          `
-            UPDATE ${voteRecordId}
-            SET direction = $direction,
-                updated_at = time::now();
-          `,
-          { direction },
+        LET $upvoteCount = (
+          SELECT count() AS total
+          FROM voted
+          WHERE out = ${tipRecordId}
+            AND direction = \"upvote\"
+          GROUP ALL
         );
-      } else {
-        await db.query(
-          `
-            RELATE ${userRecordId}->voted->${tipRecordId}
-            SET direction = $direction,
-                created_at = time::now(),
-                updated_at = time::now();
-          `,
-          { direction },
-        );
-      }
-    }
 
-    const tipRows = asArray<Record<string, unknown>>(
-      queryResult<unknown>(await db.query(`SELECT upvotes, downvotes FROM ${tipRecordId};`), 0),
+        LET $downvoteCount = (
+          SELECT count() AS total
+          FROM voted
+          WHERE out = ${tipRecordId}
+            AND direction = \"downvote\"
+          GROUP ALL
+        );
+
+        UPDATE ${tipRecordId}
+        SET upvotes = math::max(0, <int>$upvoteCount[0].total),
+            downvotes = math::max(0, <int>$downvoteCount[0].total);
+
+        COMMIT TRANSACTION;
+      `,
+      { direction },
     );
+
+    const [tipRows, currentVoteRows] = await Promise.all([
+      asArray<Record<string, unknown>>(
+        queryResult<unknown>(await db.query(`SELECT upvotes, downvotes FROM ${tipRecordId};`), 0),
+      ),
+      asArray<unknown>(
+        queryResult<unknown>(
+          await db.query(
+            `
+              SELECT VALUE direction
+              FROM voted
+              WHERE in = ${userRecordId}
+                AND out = ${tipRecordId}
+              LIMIT 1;
+            `,
+          ),
+          0,
+        ),
+      ),
+    ]);
     const tipRow = tipRows[0] ?? {};
+    const currentVote = currentVoteRows[0];
+    const normalizedCurrentVote =
+      currentVote === "upvote" || currentVote === "downvote"
+        ? (currentVote as VoteDirection)
+        : null;
+    const didHaveVote = existingDirection === "upvote" || existingDirection === "downvote";
+    const status: VoteActionResult["status"] =
+      !didHaveVote
+        ? "applied"
+        : existingDirection === direction
+          ? "removed"
+          : "switched";
+    const message =
+      status === "applied"
+        ? "Vote recorded."
+        : status === "removed"
+          ? "Vote removed."
+          : "Vote updated.";
 
     return {
       ok: true,
-      status:
-        !existingVote
-          ? "applied"
-          : existingDirection === direction
-          ? "removed"
-          : "switched",
-      message:
-        !existingVote
-          ? "Vote recorded."
-          : existingDirection === direction
-          ? "Vote removed."
-          : "Vote updated.",
+      status,
+      message,
       tipKey,
       direction,
-      currentVote: !existingVote ? direction : existingDirection === direction ? null : direction,
+      currentVote: normalizedCurrentVote,
       upvotes: toSafeInt(tipRow.upvotes),
       downvotes: toSafeInt(tipRow.downvotes),
     };

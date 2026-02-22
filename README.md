@@ -2,19 +2,55 @@
 
 GovQuest is a Next.js app for Ethiopian process guides with SurrealDB.
 
-## Run
+Yes, a Dockerfile is needed for container deployment, and it already exists at `/Users/morph/Projects/gvt/Dockerfile`.
+
+## Local Development
+
+Prerequisites: Docker + Docker Compose, Node 20+, pnpm.
 
 ```bash
+cp .env.example .env
 pnpm install
-docker compose up -d surrealdb surreal-seed
+pnpm db:up
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+- App: [http://localhost:3000](http://localhost:3000)
+- MailHog: [http://localhost:8025](http://localhost:8025)
+- `pnpm db:up` uses `/Users/morph/Projects/gvt/docker-compose.dev.yml` and imports `/Users/morph/Projects/gvt/surreal/schema-and-seed.surql` (destructive seed, dev-only).
 
-## Build
+To stop local DB/services:
 
 ```bash
-pnpm typecheck
-pnpm build
+pnpm db:down
+```
+
+## Production Deploy (Hetzner)
+
+1. Copy env file and set real values:
+
+```bash
+cp .env.example .env
+```
+
+Required production values include:
+- `BETTER_AUTH_SECRET` (32+ chars)
+- `SURREALDB_USER`, `SURREALDB_PASS`
+- `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`, `TRUSTED_ORIGINS`
+- SMTP settings (`SMTP_*`)
+
+2. Build and start:
+
+```bash
+docker compose up -d --build
+```
+
+This uses `/Users/morph/Projects/gvt/docker-compose.yml` (non-destructive schema import from `/Users/morph/Projects/gvt/surreal/schema.surql`).
+
+3. Put Nginx/Caddy in front of port `3000` for TLS and set DNS to your domain.
+
+To stop production stack:
+
+```bash
+docker compose down
 ```

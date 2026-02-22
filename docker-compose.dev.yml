@@ -1,0 +1,83 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2.3
+    command:
+      [
+        "start",
+        "--log",
+        "info",
+        "--user",
+        "${SURREALDB_USER:-root}",
+        "--pass",
+        "${SURREALDB_PASS:-root}",
+        "file:/data/database.db"
+      ]
+    ports:
+      - "8000:8000"
+    volumes:
+      - surreal-data:/data
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  surreal-seed:
+    image: surrealdb/surrealdb:v2.3
+    depends_on:
+      - surrealdb
+    volumes:
+      - ./surreal/schema-and-seed.surql:/seed.surql:ro
+    command:
+      [
+        "import",
+        "--conn",
+        "http://surrealdb:8000/rpc",
+        "--user",
+        "${SURREALDB_USER:-root}",
+        "--pass",
+        "${SURREALDB_PASS:-root}",
+        "--ns",
+        "${SURREALDB_NS:-govquest}",
+        "--db",
+        "${SURREALDB_DB:-app}",
+        "/seed.surql"
+      ]
+    restart: "on-failure:5"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - surrealdb
+      - surreal-seed
+      - mailhog
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_REQUIRE_EMAIL_VERIFICATION: ${BETTER_AUTH_REQUIRE_EMAIL_VERIFICATION:-false}
+      SURREALDB_URL: http://surrealdb:8000/rpc
+      SURREALDB_NS: ${SURREALDB_NS:-govquest}
+      SURREALDB_DB: ${SURREALDB_DB:-app}
+      SURREALDB_USER: ${SURREALDB_USER:-root}
+      SURREALDB_PASS: ${SURREALDB_PASS:-root}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-replace-me}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-replace-me}
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM: ${SMTP_FROM:-"GovQuest <no-reply@example.com>"}
+      FEEDBACK_ADMIN_EMAIL: ${FEEDBACK_ADMIN_EMAIL:-admin@example.com}
+    ports:
+      - "3000:3000"
+
+volumes:
+  surreal-data:

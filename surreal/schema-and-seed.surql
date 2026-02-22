@@ -6,10 +6,12 @@ DEFINE TABLE IF NOT EXISTS user SCHEMALESS;
 DEFINE TABLE IF NOT EXISTS session SCHEMALESS;
 DEFINE TABLE IF NOT EXISTS account SCHEMALESS;
 DEFINE TABLE IF NOT EXISTS verification SCHEMALESS;
+DEFINE TABLE IF NOT EXISTS rateLimit SCHEMALESS;
 
 DEFINE INDEX IF NOT EXISTS user_email_idx ON user COLUMNS email UNIQUE;
 DEFINE INDEX IF NOT EXISTS session_token_idx ON session COLUMNS token UNIQUE;
 DEFINE INDEX IF NOT EXISTS account_provider_idx ON account COLUMNS providerId, accountId UNIQUE;
+DEFINE INDEX IF NOT EXISTS rate_limit_key_idx ON rateLimit COLUMNS key UNIQUE;
 
 -- Core product nodes
 DEFINE TABLE IF NOT EXISTS process SCHEMALESS;
@@ -36,6 +38,9 @@ DELETE process WHERE true;
 
 DEFINE INDEX IF NOT EXISTS voted_user_tip_idx ON voted COLUMNS in, out UNIQUE;
 DEFINE INDEX IF NOT EXISTS started_user_process_idx ON started COLUMNS in, out UNIQUE;
+DEFINE INDEX IF NOT EXISTS voted_tip_direction_idx ON voted COLUMNS out, direction;
+DEFINE INDEX IF NOT EXISTS posted_task_idx ON posted COLUMNS task_id;
+DEFINE INDEX IF NOT EXISTS requires_in_sort_order_idx ON requires COLUMNS in, sort_order;
 
 -- Helpful field definitions (MVP stays schemaless for flexibility)
 DEFINE FIELD IF NOT EXISTS title ON process TYPE string;
@@ -70,6 +75,9 @@ DEFINE FIELD IF NOT EXISTS created_at ON voted TYPE datetime VALUE time::now();
 DEFINE FIELD IF NOT EXISTS updated_at ON voted TYPE datetime VALUE time::now();
 DEFINE FIELD IF NOT EXISTS created_at ON started TYPE datetime VALUE time::now();
 DEFINE FIELD IF NOT EXISTS sort_order ON requires TYPE option<int>;
+DEFINE FIELD IF NOT EXISTS key ON rateLimit TYPE string;
+DEFINE FIELD IF NOT EXISTS count ON rateLimit TYPE number;
+DEFINE FIELD IF NOT EXISTS lastRequest ON rateLimit TYPE number;
 
 -- ---------------------------------------------------------------------
 -- Processes
