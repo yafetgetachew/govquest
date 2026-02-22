@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 
+import { TransitionLink } from "@/components/ui/transition-link";
 import { Button } from "@/components/ui/button";
 import { authClient, useSession } from "@/lib/auth-client";
 
@@ -17,10 +18,10 @@ export function SessionControls() {
     return (
       <div className="flex items-center gap-2">
         <Button asChild variant="outline" size="sm">
-          <Link href="/sign-in">Sign in</Link>
+          <TransitionLink href="/sign-in">Sign in</TransitionLink>
         </Button>
         <Button asChild size="sm">
-          <Link href="/sign-up">Create account</Link>
+          <TransitionLink href="/sign-up">Create account</TransitionLink>
         </Button>
       </div>
     );
@@ -30,12 +31,12 @@ export function SessionControls() {
 
   return (
     <div className="flex items-center justify-end gap-2">
-      <Link
+      <TransitionLink
         href="/profile"
         className="text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         {username}
-      </Link>
+      </TransitionLink>
       <Button
         variant="ghost"
         size="sm"

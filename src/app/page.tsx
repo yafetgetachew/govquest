@@ -40,7 +40,9 @@ export default async function HomePage() {
         <section className="space-y-2">
           <h3 className="text-lg font-semibold text-foreground">No processes found</h3>
           <p className="text-sm text-muted-foreground">
-            Import `surreal/schema-and-seed.surql` to seed the GovQuest process catalog.
+            Import `surreal/schema-and-seed.surql` to seed the{" "}
+            <span className="gvt-wordmark inline-block align-middle font-black">GovQuest</span>{" "}
+            process catalog.
           </p>
         </section>
       ) : (

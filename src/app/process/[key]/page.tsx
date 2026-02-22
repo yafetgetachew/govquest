@@ -56,7 +56,11 @@ export default async function ProcessPage({
         <Card className="dashboard-card">
           <CardHeader>
             <CardTitle>Process not found</CardTitle>
-            <CardDescription>Select a process from the GovQuest catalog.</CardDescription>
+            <CardDescription>
+              Select a process from the{" "}
+              <span className="gvt-wordmark inline-block align-middle font-black">GovQuest</span>{" "}
+              catalog.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Link

@@ -9,6 +9,7 @@ import {
   getQuestProgressMetaStorageKey,
 } from "@/components/process/quest-storage";
 import { Input } from "@/components/ui/input";
+import { TransitionLink } from "@/components/ui/transition-link";
 import { useSession } from "@/lib/auth-client";
 import type { ProcessNode } from "@/lib/types";
 
@@ -157,7 +158,8 @@ export function ProcessCatalog({ processes }: ProcessCatalogProps) {
       <div className="mx-auto flex min-h-[calc(100vh-15rem)] w-full max-w-xl flex-col justify-center">
         <Link
           href="/"
-          className="gvt-home-wordmark mb-10 text-center text-7xl font-black leading-[0.9] tracking-tight sm:mb-12 sm:text-8xl"
+          data-gvt-wordmark-home="true"
+          className="gvt-wordmark gvt-wordmark-anchor mb-10 text-center text-7xl font-black leading-[0.9] tracking-tight sm:mb-12 sm:text-8xl"
         >
           GovQuest
         </Link>
@@ -176,14 +178,14 @@ export function ProcessCatalog({ processes }: ProcessCatalogProps) {
           {!hasQuery && startedSummaries.length > 0 ? (
             <div className="absolute left-1/2 top-0 flex w-[min(100vw-2rem,64rem)] -translate-x-1/2 flex-wrap justify-center gap-2">
               {startedSummaries.map(({ process, progressPercent }) => (
-                <Link
+                <TransitionLink
                   key={process.id}
                   href={`/process/${process.key}`}
                   className="inline-flex min-w-[180px] items-center justify-between gap-3 border border-border/70 bg-background/50 px-3 py-2 text-sm transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-foreground/25 hover:bg-muted/30"
                 >
                   <p className="font-medium text-foreground">{process.title}</p>
                   <p className="text-xs text-muted-foreground">{progressPercent}%</p>
-                </Link>
+                </TransitionLink>
               ))}
             </div>
           ) : null}
@@ -197,7 +199,7 @@ export function ProcessCatalog({ processes }: ProcessCatalogProps) {
           {hasQuery && matchedProcesses.length > 0 ? (
             <div className="absolute inset-x-0 top-0 space-y-2">
               {matchedProcesses.map((process) => (
-                <Link
+                <TransitionLink
                   key={process.id}
                   href={`/process/${process.key}`}
                   className="group block border border-border/70 bg-card px-4 py-5 transition-[background-color,border-color,transform] duration-200 ease-out hover:-translate-y-[1px] hover:border-foreground/25 hover:bg-card/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -214,7 +216,7 @@ export function ProcessCatalog({ processes }: ProcessCatalogProps) {
                       <ArrowRight className="h-4 w-4" />
                     </span>
                   </div>
-                </Link>
+                </TransitionLink>
               ))}
             </div>
           ) : null}
