@@ -47,6 +47,8 @@ jobs:
           git fetch --prune origin "${DEPLOY_BRANCH}"
           git checkout -f "${DEPLOY_BRANCH}"
           git reset --hard "origin/${DEPLOY_BRANCH}"
+          # Clean up orphaned containers that sometimes conflict on recreation.
+          docker ps -aq --filter "name=govquest-web-1" | xargs -r docker rm -f
           docker compose up -d --build
           docker image prune -f
           EOF
