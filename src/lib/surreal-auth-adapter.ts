@@ -3,6 +3,8 @@ import { createAdapterFactory, type DBAdapterDebugLogOption } from "better-auth/
 import { jsonify } from "surrealdb";
 import { Surreal } from "surrealdb";
 
+const TOKEN_EXPIRED_PATTERN = /token has expired/i;
+
 export interface SurrealAdapterConfig {
   address: string;
   username: string;
@@ -50,6 +52,14 @@ function normalizeJsonValue(value: unknown): unknown {
   return normalized;
 }
 
+function isTokenExpiredError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return TOKEN_EXPIRED_PATTERN.test(error.message);
+}
+
 async function normalizeAuthReferenceRows(db: Surreal): Promise<void> {
   await db.query(`
     UPDATE account
@@ -88,6 +98,19 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
   }
 
   const state = connectionStates.get(connectionKey)!;
+
+  const resetConnectionState = async (): Promise<void> => {
+    if (state.db) {
+      try {
+        await state.db.close();
+      } catch {
+      }
+    }
+
+    state.db = null;
+    state.connecting = null;
+    state.normalized = false;
+  };
 
   const ensureConnection = async (): Promise<Surreal> => {
     if (state.db) {
@@ -133,6 +156,24 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
     });
 
     return state.connecting;
+  };
+
+  const executeWithConnectionRetry = async <T>(
+    operation: (connection: Surreal) => Promise<T>,
+  ): Promise<T> => {
+    const connection = await ensureConnection();
+
+    try {
+      return await operation(connection);
+    } catch (error) {
+      if (!isTokenExpiredError(error)) {
+        throw error;
+      }
+
+      await resetConnectionState();
+      const refreshedConnection = await ensureConnection();
+      return operation(refreshedConnection);
+    }
   };
 
     const isRecordIdString = (value: string): boolean => {
@@ -239,8 +280,6 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
             return {
                 create: async ({ model, data }) => {
-                    const conn = await ensureConnection();
-
                     const transformedData: Record<string, unknown> = {};
                     for (const [key, value] of Object.entries(data)) {
                         transformedData[key] = transformValueForDB(key, value, model);
@@ -248,45 +287,46 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
                     debugLog?.("create", { model, data: transformedData });
 
-                    const [result] = await conn.create(model, transformedData);
+                    return executeWithConnectionRetry(async (conn) => {
+                        const [result] = await conn.create(model, transformedData);
 
-                    if (!result) {
-                        throw new SurrealDBError("Failed to create record");
-                    }
+                        if (!result) {
+                            throw new SurrealDBError("Failed to create record");
+                        }
 
-                    const output: Record<string, unknown> = {};
-                    for (const [key, value] of Object.entries(result)) {
-                        output[key] = normalizeJsonValue(value);
-                    }
+                        const output: Record<string, unknown> = {};
+                        for (const [key, value] of Object.entries(result)) {
+                            output[key] = normalizeJsonValue(value);
+                        }
 
-                    return output;
+                        return output;
+                    });
                 },
 
                 findOne: async ({ model, where }) => {
-                    const conn = await ensureConnection();
                     const whereClause = buildWhereClause(where, model);
 
                     const query = `SELECT * FROM ${model} WHERE ${whereClause} LIMIT 1`;
                     debugLog?.("findOne", { model, query });
 
-                    const [results] = await conn.query<[Record<string, unknown>[]]>(query);
-                    const record = results?.[0];
+                    return executeWithConnectionRetry(async (conn) => {
+                        const [results] = await conn.query<[Record<string, unknown>[]]>(query);
+                        const record = results?.[0];
 
-                    if (!record) {
-                        return null;
-                    }
+                        if (!record) {
+                            return null;
+                        }
 
-                    const output: Record<string, unknown> = {};
-                    for (const [key, value] of Object.entries(record)) {
-                        output[key] = normalizeJsonValue(value);
-                    }
+                        const output: Record<string, unknown> = {};
+                        for (const [key, value] of Object.entries(record)) {
+                            output[key] = normalizeJsonValue(value);
+                        }
 
-                    return output;
+                        return output;
+                    });
                 },
 
                 findMany: async ({ model, where, limit, offset, sortBy }) => {
-                    const conn = await ensureConnection();
-
                     let query = `SELECT * FROM ${model}`;
 
                     if (where && where.length > 0) {
@@ -308,19 +348,20 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
                     debugLog?.("findMany", { model, query });
 
-                    const [results] = await conn.query<[Record<string, unknown>[]]>(query);
+                    return executeWithConnectionRetry(async (conn) => {
+                        const [results] = await conn.query<[Record<string, unknown>[]]>(query);
 
-                    return (results || []).map((record) => {
-                        const output: Record<string, unknown> = {};
-                        for (const [key, value] of Object.entries(record)) {
-                            output[key] = normalizeJsonValue(value);
-                        }
-                        return output;
+                        return (results || []).map((record) => {
+                            const output: Record<string, unknown> = {};
+                            for (const [key, value] of Object.entries(record)) {
+                                output[key] = normalizeJsonValue(value);
+                            }
+                            return output;
+                        });
                     });
                 },
 
                 update: async ({ model, where, update }) => {
-                    const conn = await ensureConnection();
                     const whereClause = buildWhereClause(where, model);
 
                     const transformedUpdate: Record<string, unknown> = {};
@@ -331,26 +372,27 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
                     const query = `UPDATE ${model} MERGE $data WHERE ${whereClause}`;
                     debugLog?.("update", { model, query, data: transformedUpdate });
 
-                    const [results] = await conn.query<[Record<string, unknown>[]]>(query, {
-                        data: transformedUpdate,
+                    return executeWithConnectionRetry(async (conn) => {
+                        const [results] = await conn.query<[Record<string, unknown>[]]>(query, {
+                            data: transformedUpdate,
+                        });
+
+                        const record = results?.[0];
+
+                        if (!record) {
+                            throw new SurrealDBError("Failed to update record");
+                        }
+
+                        const output: Record<string, unknown> = {};
+                        for (const [key, value] of Object.entries(record)) {
+                            output[key] = normalizeJsonValue(value);
+                        }
+
+                        return output;
                     });
-
-                    const record = results?.[0];
-
-                    if (!record) {
-                        throw new SurrealDBError("Failed to update record");
-                    }
-
-                    const output: Record<string, unknown> = {};
-                    for (const [key, value] of Object.entries(record)) {
-                        output[key] = normalizeJsonValue(value);
-                    }
-
-                    return output;
                 },
 
                 updateMany: async ({ model, where, update }) => {
-                    const conn = await ensureConnection();
                     const whereClause = buildWhereClause(where, model);
 
                     const transformedUpdate: Record<string, unknown> = {};
@@ -361,37 +403,39 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
                     const query = `UPDATE ${model} MERGE $data WHERE ${whereClause}`;
                     debugLog?.("updateMany", { model, query, data: transformedUpdate });
 
-                    const [results] = await conn.query<[Record<string, unknown>[]]>(query, {
-                        data: transformedUpdate,
-                    });
+                    return executeWithConnectionRetry(async (conn) => {
+                        const [results] = await conn.query<[Record<string, unknown>[]]>(query, {
+                            data: transformedUpdate,
+                        });
 
-                    return results?.length || 0;
+                        return results?.length || 0;
+                    });
                 },
 
                 delete: async ({ model, where }) => {
-                    const conn = await ensureConnection();
                     const whereClause = buildWhereClause(where, model);
 
                     const query = `DELETE FROM ${model} WHERE ${whereClause}`;
                     debugLog?.("delete", { model, query });
 
-                    await conn.query(query);
+                    await executeWithConnectionRetry(async (conn) => {
+                        await conn.query(query);
+                    });
                 },
 
                 deleteMany: async ({ model, where }) => {
-                    const conn = await ensureConnection();
                     const whereClause = buildWhereClause(where, model);
 
                     const query = `DELETE FROM ${model} WHERE ${whereClause}`;
                     debugLog?.("deleteMany", { model, query });
 
-                    const [results] = await conn.query<[Record<string, unknown>[]]>(query);
-                    return results?.length || 0;
+                    return executeWithConnectionRetry(async (conn) => {
+                        const [results] = await conn.query<[Record<string, unknown>[]]>(query);
+                        return results?.length || 0;
+                    });
                 },
 
                 count: async ({ model, where }) => {
-                    const conn = await ensureConnection();
-
                     let query: string;
                     if (where && where.length > 0) {
                         const whereClause = buildWhereClause(where, model);
@@ -402,8 +446,10 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
 
                     debugLog?.("count", { model, query });
 
-                    const [results] = await conn.query<[Array<{ count: number }>]>(query);
-                    return results?.[0]?.count || 0;
+                    return executeWithConnectionRetry(async (conn) => {
+                        const [results] = await conn.query<[Array<{ count: number }>]>(query);
+                        return results?.[0]?.count || 0;
+                    });
                 },
 
                 options: config,
