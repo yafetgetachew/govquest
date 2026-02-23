@@ -4,6 +4,11 @@ import { jsonify } from "surrealdb";
 import { Surreal } from "surrealdb";
 
 const TOKEN_EXPIRED_PATTERN = /token has expired/i;
+const DEFAULT_AUTH_CONNECTION_MAX_AGE_SECONDS = 45 * 60;
+const AUTH_CONNECTION_MAX_AGE_MS = toPositiveInt(
+  process.env.SURREALDB_AUTH_CLIENT_MAX_AGE_SECONDS,
+  DEFAULT_AUTH_CONNECTION_MAX_AGE_SECONDS,
+) * 1000;
 
 export interface SurrealAdapterConfig {
   address: string;
@@ -19,6 +24,7 @@ interface ConnectionState {
   db: Surreal | null;
   connecting: Promise<Surreal> | null;
   normalized: boolean;
+  connectedAt: number;
 }
 
 declare global {
@@ -53,11 +59,7 @@ function normalizeJsonValue(value: unknown): unknown {
 }
 
 function isTokenExpiredError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  return TOKEN_EXPIRED_PATTERN.test(error.message);
+  return TOKEN_EXPIRED_PATTERN.test(getErrorMessage(error));
 }
 
 async function normalizeAuthReferenceRows(db: Surreal): Promise<void> {
@@ -94,6 +96,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
       db: null,
       connecting: null,
       normalized: false,
+      connectedAt: 0,
     });
   }
 
@@ -110,10 +113,11 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
     state.db = null;
     state.connecting = null;
     state.normalized = false;
+    state.connectedAt = 0;
   };
 
   const ensureConnection = async (): Promise<Surreal> => {
-    if (state.db) {
+    if (state.db && Date.now() - state.connectedAt < AUTH_CONNECTION_MAX_AGE_MS) {
       if (!state.normalized) {
         try {
           await normalizeAuthReferenceRows(state.db);
@@ -123,6 +127,10 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
         }
       }
       return state.db;
+    }
+
+    if (state.db && Date.now() - state.connectedAt >= AUTH_CONNECTION_MAX_AGE_MS) {
+      await resetConnectionState();
     }
 
     if (state.connecting) {
@@ -148,6 +156,7 @@ export const surrealAdapter = (config: SurrealAdapterConfig) => {
       }
 
       state.db = nextDb;
+      state.connectedAt = Date.now();
       state.connecting = null;
       return nextDb;
     })().catch((error) => {
@@ -466,3 +475,33 @@ export class SurrealDBError extends Error {
 }
 
 export { SurrealDBError as SurrealDBQueryError };
+
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    if (typeof error === "string") {
+        return error;
+    }
+
+    if (error && typeof error === "object" && "message" in error) {
+        const message = (error as { message?: unknown }).message;
+        return typeof message === "string" ? message : "";
+    }
+
+    return "";
+}
+
+function toPositiveInt(value: string | undefined, fallback: number): number {
+    if (!value) {
+        return fallback;
+    }
+
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return fallback;
+    }
+
+    return parsed;
+}

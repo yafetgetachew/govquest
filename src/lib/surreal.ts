@@ -6,6 +6,11 @@ const isProduction = process.env.NODE_ENV === "production";
 const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 const isStrictProductionRuntime = isProduction && !isBuildPhase;
 const TOKEN_EXPIRED_PATTERN = /token has expired/i;
+const DEFAULT_CLIENT_MAX_AGE_SECONDS = 45 * 60;
+const CLIENT_MAX_AGE_MS = toPositiveInt(
+  process.env.SURREALDB_CLIENT_MAX_AGE_SECONDS,
+  DEFAULT_CLIENT_MAX_AGE_SECONDS,
+) * 1000;
 const RETRIABLE_METHODS = new Set<PropertyKey>([
   "query",
   "create",
@@ -27,6 +32,7 @@ interface SurrealConnectionConfig {
 
 declare global {
   var surrealClientSingleton: Promise<Surreal> | undefined;
+  var surrealClientCreatedAt: number | undefined;
 }
 
 async function createClient(): Promise<Surreal> {
@@ -46,9 +52,16 @@ async function createClient(): Promise<Surreal> {
 }
 
 export async function getSurrealClient(): Promise<Surreal> {
-  if (!global.surrealClientSingleton) {
+  const now = Date.now();
+  const shouldRotate =
+    typeof global.surrealClientCreatedAt === "number" &&
+    now - global.surrealClientCreatedAt >= CLIENT_MAX_AGE_MS;
+
+  if (!global.surrealClientSingleton || shouldRotate) {
+    global.surrealClientCreatedAt = now;
     global.surrealClientSingleton = createClient().catch((error: unknown) => {
       global.surrealClientSingleton = undefined;
+      global.surrealClientCreatedAt = undefined;
       throw error;
     });
   }
@@ -57,18 +70,6 @@ export async function getSurrealClient(): Promise<Surreal> {
 }
 
 function createResilientClient(db: Surreal, connectionConfig: SurrealConnectionConfig): Surreal {
-  let authRefreshInFlight: Promise<void> | null = null;
-
-  const refreshAuth = async () => {
-    if (!authRefreshInFlight) {
-      authRefreshInFlight = authenticate(db, connectionConfig).finally(() => {
-        authRefreshInFlight = null;
-      });
-    }
-
-    return authRefreshInFlight;
-  };
-
   return new Proxy(db, {
     get(target, property, receiver) {
       const value = Reflect.get(target, property, receiver);
@@ -89,25 +90,16 @@ function createResilientClient(db: Surreal, connectionConfig: SurrealConnectionC
             throw error;
           }
 
-          await refreshAuth();
+          global.surrealClientSingleton = undefined;
+          global.surrealClientCreatedAt = undefined;
+          const refreshedClient = await getSurrealClient();
+          const refreshedMethod = Reflect.get(refreshedClient, property);
 
-          try {
-            return await method(...args);
-          } catch (retryError) {
-            if (!isTokenExpiredError(retryError)) {
-              throw retryError;
-            }
-
-            global.surrealClientSingleton = undefined;
-            const refreshedClient = await getSurrealClient();
-            const refreshedMethod = Reflect.get(refreshedClient, property);
-
-            if (typeof refreshedMethod !== "function") {
-              throw retryError;
-            }
-
-            return refreshedMethod.apply(refreshedClient, args);
+          if (typeof refreshedMethod !== "function") {
+            throw error;
           }
+
+          return refreshedMethod.apply(refreshedClient, args);
         }
       };
     },
@@ -127,11 +119,7 @@ async function authenticate(db: Surreal, connectionConfig: SurrealConnectionConf
 }
 
 function isTokenExpiredError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  return TOKEN_EXPIRED_PATTERN.test(error.message);
+  return TOKEN_EXPIRED_PATTERN.test(getErrorMessage(error));
 }
 
 function resolveRequiredEnv(name: string, fallback?: string): string {
@@ -146,4 +134,34 @@ function resolveRequiredEnv(name: string, fallback?: string): string {
   }
 
   throw new Error(`${name} must be set${isStrictProductionRuntime ? " in production" : ""}.`);
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    return typeof message === "string" ? message : "";
+  }
+
+  return "";
+}
+
+function toPositiveInt(value: string | undefined, fallback: number): number {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
 }

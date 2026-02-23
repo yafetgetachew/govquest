@@ -4,6 +4,7 @@ import { getProcessCatalog, getUserStartedProcessProgress } from "@/lib/process-
 import { getServerSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
+const isProductionRuntime = process.env.NODE_ENV === "production";
 
 export default async function HomePage() {
   const [{ processes, connectionError }, session] = await Promise.all([
@@ -20,17 +21,23 @@ export default async function HomePage() {
       <main className="space-y-6">
         <Card className="dashboard-card">
           <CardHeader>
-            <CardTitle>SurrealDB is not reachable</CardTitle>
-            <CardDescription>Start the local database, then refresh this page.</CardDescription>
+            <CardTitle>{isProductionRuntime ? "Database is temporarily unavailable" : "SurrealDB is not reachable"}</CardTitle>
+            <CardDescription>
+              {isProductionRuntime
+                ? "Please refresh in a moment. If this persists, check the app and database containers."
+                : "Start the local database, then refresh this page."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Run:
-              {" "}
-              <code className="rounded-none bg-muted px-2 py-1 text-foreground">
-                docker compose up -d surrealdb surreal-seed
-              </code>
-            </p>
+            {!isProductionRuntime ? (
+              <p>
+                Run:
+                {" "}
+                <code className="rounded-none bg-muted px-2 py-1 text-foreground">
+                  docker compose -f docker-compose.dev.yml up -d surrealdb surreal-seed
+                </code>
+              </p>
+            ) : null}
             <p>
               Current error:
               {" "}
