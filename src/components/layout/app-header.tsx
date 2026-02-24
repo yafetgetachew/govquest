@@ -105,18 +105,18 @@ export function AppHeader() {
   }, [isHome, pathname]);
 
   return (
-    <header className="w-full px-4 pb-3 pt-6 sm:px-6 lg:px-10">
-      <div className={`flex items-start gap-4 ${isHome ? "justify-end" : "justify-between"}`}>
+    <header className="w-full px-3 pb-2 pt-4 sm:px-6 sm:pb-3 sm:pt-6 lg:px-10">
+      <div className={`flex items-center gap-2 sm:gap-4 ${isHome ? "justify-end" : "justify-between"}`}>
         {!isHome ? (
           <TransitionLink
             href="/"
             data-gvt-wordmark-header="true"
-            className="gvt-wordmark gvt-wordmark-anchor text-xl font-black tracking-tight md:text-2xl"
+            className="gvt-wordmark gvt-wordmark-anchor shrink-0 text-base font-black leading-none tracking-tight sm:text-xl md:text-2xl"
           >
             GovQuest
           </TransitionLink>
         ) : null}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <SessionControls />
           <ThemeToggle />
         </div>

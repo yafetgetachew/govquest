@@ -49,7 +49,7 @@ export function ThemeToggle() {
     <button
       type="button"
       className={cn(
-        "relative h-7 w-[4.25rem] shrink-0 overflow-hidden rounded-full border border-border/60 p-0 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "relative h-6 w-[3.5rem] shrink-0 overflow-hidden rounded-full border border-border/60 p-0 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-7 sm:w-[4.25rem]",
         !ready && "opacity-70",
       )}
       onClick={toggleTheme}
@@ -71,27 +71,31 @@ export function ThemeToggle() {
             theme === "dark" ? "opacity-100" : "opacity-62",
           )}
         />
-        <span className="theme-toggle-cloud absolute left-1.5 top-1.5 h-1.5 w-4.5 rounded-full bg-white/85 blur-[0.2px]" />
-        <span className="theme-toggle-cloud absolute left-3 top-3 h-1.5 w-3.5 rounded-full bg-white/75 blur-[0.2px] [animation-delay:0.5s]" />
-        <span className="theme-toggle-cloud absolute left-1 top-4 h-1 w-2.5 rounded-full bg-white/70 blur-[0.2px] [animation-delay:1.1s]" />
+        <span className="theme-toggle-cloud absolute left-1.5 top-1.5 h-1.5 w-4 rounded-full bg-white/85 blur-[0.2px] sm:w-4.5" />
+        <span className="theme-toggle-cloud absolute left-2.5 top-3 h-1.5 w-3 rounded-full bg-white/75 blur-[0.2px] [animation-delay:0.5s] sm:left-3 sm:w-3.5" />
+        <span className="theme-toggle-cloud absolute left-1 top-4 h-1 w-2 rounded-full bg-white/70 blur-[0.2px] [animation-delay:1.1s] sm:w-2.5" />
 
-        <span className="absolute right-1 top-1 h-5 w-7 bg-[radial-gradient(circle_at_40%_50%,rgba(148,163,184,0.45),transparent_68%)]" />
+        <span className="absolute right-1 top-1 h-4 w-6 bg-[radial-gradient(circle_at_40%_50%,rgba(148,163,184,0.45),transparent_68%)] sm:h-5 sm:w-7" />
         <span className="theme-toggle-star absolute right-2 top-1.5 h-1 w-1 rounded-full bg-slate-100" />
-        <span className="theme-toggle-star absolute right-4.5 top-2.5 h-1 w-1 rounded-full bg-slate-100/90 [animation-delay:0.45s]" />
-        <span className="theme-toggle-star absolute right-6.5 top-1.5 h-1 w-1 rounded-full bg-slate-100/75 [animation-delay:1.1s]" />
-        <span className="theme-toggle-star absolute right-3.5 top-4 h-1 w-1 rounded-full bg-slate-100/85 [animation-delay:1.7s]" />
-        <span className="theme-toggle-star absolute right-7 top-4.5 h-1 w-1 rounded-full bg-slate-100/70 [animation-delay:2.2s]" />
+        <span className="theme-toggle-star absolute right-4 top-2.5 h-1 w-1 rounded-full bg-slate-100/90 [animation-delay:0.45s] sm:right-4.5" />
+        <span className="theme-toggle-star absolute right-6 top-1.5 h-1 w-1 rounded-full bg-slate-100/75 [animation-delay:1.1s] sm:right-6.5" />
+        <span className="theme-toggle-star absolute right-3 top-4 h-1 w-1 rounded-full bg-slate-100/85 [animation-delay:1.7s] sm:right-3.5" />
+        <span className="theme-toggle-star absolute right-6.5 top-4.5 h-1 w-1 rounded-full bg-slate-100/70 [animation-delay:2.2s] sm:right-7" />
       </span>
 
       <span
         aria-hidden
         className={cn(
-          "absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-white/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.7)_0%,rgba(226,232,240,0.45)_100%)] text-foreground backdrop-blur-md shadow-[0_4px_12px_rgba(15,23,42,0.35)] transition-transform duration-300",
-          theme === "dark" ? "translate-x-[39px]" : "translate-x-0",
+          "absolute left-1 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border border-white/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.7)_0%,rgba(226,232,240,0.45)_100%)] text-foreground backdrop-blur-md shadow-[0_4px_12px_rgba(15,23,42,0.35)] transition-transform duration-300 sm:h-5 sm:w-5",
+          theme === "dark" ? "translate-x-[31px] sm:translate-x-[39px]" : "translate-x-0",
         )}
       >
         <span className="grid h-full w-full place-items-center">
-          {theme === "dark" ? <Moon className="h-2.5 w-2.5 text-slate-100 drop-shadow-[0_0_5px_rgba(226,232,240,0.9)]" /> : <Sun className="h-2.5 w-2.5 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.8)]" />}
+          {theme === "dark" ? (
+            <Moon className="h-2 w-2 text-slate-100 drop-shadow-[0_0_5px_rgba(226,232,240,0.9)] sm:h-2.5 sm:w-2.5" />
+          ) : (
+            <Sun className="h-2 w-2 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.8)] sm:h-2.5 sm:w-2.5" />
+          )}
         </span>
       </span>
       <span className="sr-only">{theme === "dark" ? "Light mode" : "Dark mode"}</span>
