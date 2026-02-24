@@ -40,7 +40,7 @@ export function FloatingFeedback() {
         <DialogHeader>
           <DialogTitle>Platform Feedback</DialogTitle>
           <DialogDescription>
-            Tell us what is unclear, outdated, or missing. We save this directly in SurrealDB and email the admin.
+            Tell us what is unclear, outdated, or missing. We review every submission and use it to improve the guides.
           </DialogDescription>
         </DialogHeader>
 

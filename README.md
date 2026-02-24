@@ -1,65 +1,120 @@
 # GovQuest
 
-GovQuest is a Next.js app for Ethiopian process guides with SurrealDB.
+GovQuest is a web platform that helps people navigate Ethiopian public-service processes through clear, step-by-step task flows, community tips, and progress tracking.
 
-## Local Development
+## Features
 
-Prerequisites: Docker + Docker Compose, Node 20+, pnpm.
+- Process guides with nested, drill-down tasks
+- Quest-style progress tracking with resumable state
+- Community tips per task with voting
+- User authentication (email/password + Google OAuth)
+- In-app feedback submission with email delivery
+- Production-ready Docker deployment
+
+## Tech Stack
+
+- Next.js (App Router) + TypeScript
+- Tailwind CSS + shadcn/ui
+- Better Auth
+- SurrealDB (graph model)
+- Nodemailer
+- Docker Compose
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm 10+
+- Docker + Docker Compose
+
+### 1) Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2) Configure environment
 
 ```bash
 cp .env.example .env
-pnpm install
+```
+
+Set required values in `.env` before running the app.
+
+### 3) Start local services
+
+```bash
 pnpm db:up
 pnpm dev
 ```
 
-- App: [http://localhost:3000](http://localhost:3000)
-- MailHog: [http://localhost:8025](http://localhost:8025)
-- `pnpm db:up` uses `/Users/morph/Projects/gvt/docker-compose.dev.yml` and imports `/Users/morph/Projects/gvt/surreal/schema-and-seed.surql` (destructive seed, dev-only).
+Local URLs:
 
-To stop local DB/services:
+- App: `http://localhost:3000`
+- MailHog: `http://localhost:8025`
+
+Stop local services:
 
 ```bash
 pnpm db:down
 ```
 
-## Production Deploy
+## Available Scripts
 
-1. Copy env file and set real values:
+- `pnpm dev` - start Next.js in development mode
+- `pnpm build` - create production build
+- `pnpm start` - run production server
+- `pnpm typecheck` - run TypeScript checks
+- `pnpm db:up` - start local DB + seed
+- `pnpm db:down` - stop local DB stack
+- `pnpm db:logs` - tail DB/seed logs
+- `pnpm db:catalog:enrich` - enrich process/task metadata (task outputs + map links)
+- `pnpm db:catalog:build` - rebuild production catalog seed
+- `pnpm db:schema:apply` - apply production schema service
+- `pnpm prod:up` - start production compose stack
+- `pnpm prod:down` - stop production compose stack
 
-```bash
-cp .env.example .env
-```
+## Data Workflow
 
-Required production values include:
-- `BETTER_AUTH_SECRET` (32+ chars)
-- `SURREALDB_USER`, `SURREALDB_PASS`
-- `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`, `TRUSTED_ORIGINS`
-- SMTP settings (`SMTP_*`)
+`surreal/schema-and-seed.surql` is the source of truth for process/task content.
 
-2. Build and start:
-
-```bash
-docker compose up -d --build
-```
-
-This uses `/Users/morph/Projects/gvt/docker-compose.yml` (non-destructive schema import from `/Users/morph/Projects/gvt/surreal/schema.surql`).
-
-Production also imports `/Users/morph/Projects/gvt/surreal/catalog-prod.surql` for the process/task graph.
-It also applies `/Users/morph/Projects/gvt/surreal/migrations/001-default-field-semantics.surql` on startup to keep mutable fields (`started.progress_percent`, `started.active`, etc.) writable.
-
-When you add or update processes in `/Users/morph/Projects/gvt/surreal/schema-and-seed.surql`, rebuild and commit the production catalog before deploying:
+Before shipping content updates:
 
 ```bash
 pnpm db:catalog:build
 ```
 
-`pnpm db:catalog:build` now auto-runs enrichment to ensure each task has an `output` artifact and to add Google Maps links for process/task locations where available.
+This regenerates `surreal/catalog-prod.surql` and applies metadata enrichment (task output artifacts and map links).
 
-3. Put Nginx/Caddy in front of port `3000` for TLS and set DNS to your domain.
+## Production Deployment
 
-To stop production stack:
+1. Configure `.env` with production values.
+2. Build and start containers:
+
+```bash
+docker compose up -d --build
+```
+
+3. Place a reverse proxy (TLS termination) in front of port `3000`.
+
+To stop the production stack:
 
 ```bash
 docker compose down
 ```
+
+## Authentication Notes
+
+Google sign-in requires valid `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`, and matching callback/domain configuration in Google Cloud Console.
+
+## Contributing
+
+1. Create a branch
+2. Make changes
+3. Run checks (`pnpm typecheck`, `pnpm build`)
+4. Open a pull request with a clear change summary
+
+## License
+
+This project currently has no license file. Add one before distributing or accepting external contributions.

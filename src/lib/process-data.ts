@@ -883,7 +883,7 @@ function getConnectionErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return "Unable to connect to SurrealDB.";
+  return "Service temporarily unavailable.";
 }
 
 function normalizeTaskRecordId(value: string): string {

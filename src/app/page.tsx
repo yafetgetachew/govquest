@@ -21,11 +21,11 @@ export default async function HomePage() {
       <main className="space-y-6">
         <Card className="dashboard-card">
           <CardHeader>
-            <CardTitle>{isProductionRuntime ? "Database is temporarily unavailable" : "SurrealDB is not reachable"}</CardTitle>
+            <CardTitle>Service temporarily unavailable</CardTitle>
             <CardDescription>
               {isProductionRuntime
-                ? "Please refresh in a moment. If this persists, check the app and database containers."
-                : "Start the local database, then refresh this page."}
+                ? "Please refresh in a moment. If this continues, contact support."
+                : "Start local dependencies, then refresh this page."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
@@ -38,11 +38,13 @@ export default async function HomePage() {
                 </code>
               </p>
             ) : null}
-            <p>
-              Current error:
-              {" "}
-              <code className="rounded-none bg-muted px-2 py-1 text-foreground">{connectionError}</code>
-            </p>
+            {!isProductionRuntime ? (
+              <p>
+                Details:
+                {" "}
+                <code className="rounded-none bg-muted px-2 py-1 text-foreground">{connectionError}</code>
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       </main>
@@ -55,9 +57,8 @@ export default async function HomePage() {
         <section className="space-y-2">
           <h3 className="text-lg font-semibold text-foreground">No processes found</h3>
           <p className="text-sm text-muted-foreground">
-            Import `surreal/schema-and-seed.surql` to seed the{" "}
-            <span className="gvt-wordmark inline-block align-middle font-black">GovQuest</span>{" "}
-            process catalog.
+            No guides are available yet.
+            {!isProductionRuntime ? " For local setup, run `pnpm db:up`." : ""}
           </p>
         </section>
       ) : (
