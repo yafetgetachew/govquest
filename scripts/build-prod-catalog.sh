@@ -4,15 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC="${ROOT_DIR}/surreal/schema-and-seed.surql"
 OUT="${ROOT_DIR}/surreal/catalog-prod.surql"
-ENRICH_SCRIPT="${ROOT_DIR}/scripts/enrich-process-metadata.mjs"
 
 if [[ ! -f "${SRC}" ]]; then
   echo "Source file not found: ${SRC}" >&2
   exit 1
-fi
-
-if [[ -f "${ENRICH_SCRIPT}" ]]; then
-  node "${ENRICH_SCRIPT}" "${SRC}" >/dev/null
 fi
 
 {

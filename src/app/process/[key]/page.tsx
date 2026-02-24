@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { ArrowLeft, ExternalLink, MapPin, Monitor, PersonStanding } from "lucide-react";
+import { ExternalLink, MapPin, Monitor, PersonStanding } from "lucide-react";
 
+import { ProcessBackButton } from "@/components/process/process-back-button";
 import { ProcessQuestMode } from "@/components/process/process-quest-mode";
 import { QuestModeToggleButton } from "@/components/process/quest-mode-toggle-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,13 +78,9 @@ export default async function ProcessPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center text-foreground"
+            <ProcessBackButton
               aria-label="Back to processes"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Link>
+            />
           </CardContent>
         </Card>
       </main>
@@ -100,13 +96,9 @@ export default async function ProcessPage({
     <main className="space-y-6 pb-10">
       <section className="space-y-3 pb-5">
         <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center text-foreground"
+          <ProcessBackButton
             aria-label="Back to processes"
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </Link>
+          />
           <h2 className="text-3xl font-semibold tracking-tight text-foreground">{process.title}</h2>
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
