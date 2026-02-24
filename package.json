@@ -10,6 +10,7 @@
     "db:up": "docker compose -f docker-compose.dev.yml up -d surrealdb surreal-seed",
     "db:down": "docker compose -f docker-compose.dev.yml down",
     "db:logs": "docker compose -f docker-compose.dev.yml logs --tail=100 surrealdb surreal-seed",
+    "db:catalog:enrich": "node ./scripts/enrich-process-metadata.mjs surreal/schema-and-seed.surql",
     "db:catalog:build": "./scripts/build-prod-catalog.sh",
     "db:schema:apply": "docker compose run --rm surreal-schema",
     "prod:up": "docker compose up -d",

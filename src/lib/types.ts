@@ -32,6 +32,7 @@ export interface TaskNode {
   key: string;
   title: string;
   description: string;
+  output?: string;
   location?: string;
   links: ExternalLink[];
   requiredDocuments: RequiredDocument[];

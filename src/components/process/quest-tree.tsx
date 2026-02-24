@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, FileText, MapPin } from "lucide-react";
+import { BadgeCheck, ChevronLeft, ChevronRight, ExternalLink, FileText, MapPin } from "lucide-react";
 
 import {
   createTipAction,
@@ -550,7 +550,8 @@ function TaskContextSummary({
   includeDescription: boolean;
   className?: string;
 }) {
-  const hasMeta = task.location || task.links.length > 0 || task.requiredDocuments.length > 0;
+  const hasMeta =
+    task.output || task.location || task.links.length > 0 || task.requiredDocuments.length > 0;
 
   if (!includeDescription && !hasMeta) {
     return null;
@@ -560,6 +561,13 @@ function TaskContextSummary({
     <section className={cn("space-y-2", className)}>
       {includeDescription ? (
         <p className="text-sm text-muted-foreground">{task.description}</p>
+      ) : null}
+      {task.output ? (
+        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <BadgeCheck className="h-3.5 w-3.5" />
+          <span className="font-medium text-foreground">Output:</span>
+          {task.output}
+        </p>
       ) : null}
       {task.location ? (
         <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">

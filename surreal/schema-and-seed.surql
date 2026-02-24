@@ -54,6 +54,7 @@ DEFINE FIELD IF NOT EXISTS attendance_modes ON process TYPE option<array<string>
 
 DEFINE FIELD IF NOT EXISTS title ON task TYPE string;
 DEFINE FIELD IF NOT EXISTS description ON task TYPE string;
+DEFINE FIELD IF NOT EXISTS output ON task TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS location ON task TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS links ON task TYPE option<array<object>>;
 DEFINE FIELD IF NOT EXISTS required_documents ON task TYPE option<array<object>>;
@@ -102,7 +103,8 @@ CREATE process:passport CONTENT {
   attendance_modes: ["in_person", "online"],
   links: [
     { label: "ICS Portal", url: "https://www.ics.gov.et" },
-    { label: "ICS Services", url: "https://www.ics.gov.et/service" }
+    { label: "ICS Services", url: "https://www.ics.gov.et/service" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Ethiopian%20Immigration%20and%20Citizenship%20Service%20branch%20assigned%20in%20your%20appointment%2C%20Ethiopia" }
   ]
 };
 
@@ -116,7 +118,8 @@ CREATE process:fayda_registration CONTENT {
   attendance_modes: ["in_person", "online"],
   links: [
     { label: "National ID (Fayda)", url: "https://id.gov.et" },
-    { label: "Find Registration Center", url: "https://id.gov.et/service-locations" }
+    { label: "Find Registration Center", url: "https://id.gov.et/services" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Fayda%20registration%20centers%20(Ethio%20telecom%2C%20selected%20banks%2C%20post%20offices%2C%20and%20approved%20enrollment%20centers)%2C%20Ethiopia" }
   ]
 };
 
@@ -129,8 +132,8 @@ CREATE process:commercial_registration CONTENT {
   location: "Online via eTrade and at MoTRI/regional trade offices where needed",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "MoTRI", url: "https://www.motri.gov.et" },
-    { label: "eTrade Portal", url: "https://etrade.gov.et" }
+    { label: "eTrade Portal", url: "https://etrade.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Online%20via%20eTrade%20and%20at%20MoTRI%2Fregional%20trade%20offices%20where%20needed%2C%20Ethiopia" }
   ]
 };
 
@@ -143,7 +146,8 @@ CREATE process:trade_license_new CONTENT {
   location: "Online via eTrade and trade offices assigned by your region/city",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "eTrade Portal", url: "https://etrade.gov.et" }
+    { label: "eTrade Portal", url: "https://etrade.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Online%20via%20eTrade%20and%20trade%20offices%20assigned%20by%20your%20region%2Fcity%2C%20Ethiopia" }
   ]
 };
 
@@ -156,7 +160,8 @@ CREATE process:trade_license_renewal CONTENT {
   location: "Online via eTrade and trade offices assigned by your region/city",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "eTrade Portal", url: "https://etrade.gov.et" }
+    { label: "eTrade Portal", url: "https://etrade.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Online%20via%20eTrade%20and%20trade%20offices%20assigned%20by%20your%20region%2Fcity%2C%20Ethiopia" }
   ]
 };
 
@@ -170,7 +175,8 @@ CREATE process:business_visa CONTENT {
   attendance_modes: ["in_person", "online"],
   links: [
     { label: "ICS Portal", url: "https://www.ics.gov.et" },
-    { label: "ICS Services", url: "https://www.ics.gov.et/service" }
+    { label: "ICS Services", url: "https://www.ics.gov.et/service" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Online%20and%20Ethiopian%20Immigration%2Fmission%20channels%20based%20on%20applicant%20route%2C%20Ethiopia" }
   ]
 };
 
@@ -184,7 +190,8 @@ CREATE process:temporary_residence_marriage CONTENT {
   attendance_modes: ["in_person"],
   links: [
     { label: "ICS Portal", url: "https://www.ics.gov.et" },
-    { label: "Residence Services", url: "https://www.ics.gov.et/service" }
+    { label: "Residence Services", url: "https://www.ics.gov.et/service" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Ethiopian%20Immigration%20and%20Citizenship%20Service%20offices%20handling%20residence%20services%2C%20Ethiopia" }
   ]
 };
 
@@ -198,7 +205,8 @@ CREATE process:ethiopian_origin_id CONTENT {
   attendance_modes: ["in_person"],
   links: [
     { label: "ICS Portal", url: "https://www.ics.gov.et" },
-    { label: "Origin ID Services", url: "https://www.ics.gov.et/service" }
+    { label: "Origin ID Services", url: "https://www.ics.gov.et/service" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Ethiopian%20Immigration%20and%20Citizenship%20Service%20offices%20handling%20origin%20ID%20applications%2C%20Ethiopia" }
   ]
 };
 
@@ -211,7 +219,8 @@ CREATE process:kebele_id_residency CONTENT {
   location: "Local Kebele or district civil registration and residency office",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" }
+    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Local%20Kebele%20or%20district%20civil%20registration%20and%20residency%20office%2C%20Ethiopia" }
   ]
 };
 
@@ -224,7 +233,8 @@ CREATE process:drivers_license_issue CONTENT {
   location: "Driver and Vehicle License Control Authority branches",
   attendance_modes: ["in_person"],
   links: [
-    { label: "DVLCA", url: "https://www.dvlca.gov.et/" }
+    { label: "DVLCA", url: "https://www.dvlca.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Driver%20and%20Vehicle%20License%20Control%20Authority%20branches%2C%20Ethiopia" }
   ]
 };
 
@@ -237,7 +247,8 @@ CREATE process:voter_registration CONTENT {
   location: "Polling station in your kebele/constituency during NEBE timetable",
   attendance_modes: ["in_person"],
   links: [
-    { label: "NEBE Voter Registration", url: "https://nebe.org.et/en/voters-registration" }
+    { label: "NEBE Voter Registration", url: "https://nebe.org.et/en/voters-registration" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Polling%20station%20in%20your%20kebele%2Fconstituency%20during%20NEBE%20timetable%2C%20Ethiopia" }
   ]
 };
 
@@ -251,7 +262,8 @@ CREATE process:student_id_card CONTENT {
   attendance_modes: ["in_person"],
   links: [
     { label: "Haramaya University Registrar (ID Card)", url: "https://www.hu.edu.et/index.php/admission-regst" },
-    { label: "Mattu University Registrar", url: "https://www.meu.edu.et/menu/10/registrar" }
+    { label: "Mattu University Registrar", url: "https://www.meu.edu.et/menu/10/registrar" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Registrar%20office%20at%20your%20school%2Funiversity%2C%20Ethiopia" }
   ]
 };
 
@@ -265,7 +277,8 @@ CREATE process:tin_registration CONTENT {
   attendance_modes: ["in_person", "online"],
   links: [
     { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" },
-    { label: "Ministry of Revenues", url: "https://www.mor.gov.et/web/mor/mor" }
+    { label: "Ministry of Revenues", url: "https://www.mor.gov.et/web/mor/mor" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Ministry%20of%20Revenues%20branches%20or%20integrated%20digital%20business%2Ftax%20channels%2C%20Ethiopia" }
   ]
 };
 
@@ -278,7 +291,8 @@ CREATE process:birth_certificate_issuance CONTENT {
   location: "Civil registration office serving place of birth/residence",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" }
+    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Civil%20registration%20office%20serving%20place%20of%20birth%2Fresidence%2C%20Ethiopia" }
   ]
 };
 
@@ -291,7 +305,8 @@ CREATE process:marriage_certificate_registration CONTENT {
   location: "Civil registration office where marriage is registered",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" }
+    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Civil%20registration%20office%20where%20marriage%20is%20registered%2C%20Ethiopia" }
   ]
 };
 
@@ -304,7 +319,8 @@ CREATE process:police_clearance_certificate CONTENT {
   location: "Federal Police service center or designated police clearance office",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "Ethiopian Federal Police", url: "https://www.federalpolice.gov.et/" }
+    { label: "Ethiopian Federal Police", url: "https://www.federalpolice.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Federal%20Police%20service%20center%20or%20designated%20police%20clearance%20office%2C%20Ethiopia" }
   ]
 };
 
@@ -317,7 +333,8 @@ CREATE process:work_permit_foreign_employee CONTENT {
   location: "Labor and skills authority office or official online filing channel",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "Ministry of Labor and Skills", url: "https://www.mols.gov.et/" }
+    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Labor%20and%20skills%20authority%20office%20or%20official%20online%20filing%20channel%2C%20Ethiopia" }
   ]
 };
 
@@ -330,7 +347,8 @@ CREATE process:electricity_new_connection CONTENT {
   location: "Ethiopian Electric Utility customer service center / approved digital channel",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "Ethiopian Electric Utility", url: "https://www.eeu.gov.et/" }
+    { label: "Ethiopian Electric Utility", url: "https://www.eeu.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Ethiopian%20Electric%20Utility%20customer%20service%20center%20%2F%20approved%20digital%20channel%2C%20Ethiopia" }
   ]
 };
 
@@ -343,7 +361,8 @@ CREATE process:death_certificate_issuance CONTENT {
   location: "Civil registration office serving place of death/residence",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" }
+    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Civil%20registration%20office%20serving%20place%20of%20death%2Fresidence%2C%20Ethiopia" }
   ]
 };
 
@@ -356,7 +375,8 @@ CREATE process:divorce_certificate_registration CONTENT {
   location: "Civil registration office where divorce is registered",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" }
+    { label: "Addis Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Civil%20registration%20office%20where%20divorce%20is%20registered%2C%20Ethiopia" }
   ]
 };
 
@@ -370,7 +390,7 @@ CREATE process:business_name_reservation CONTENT {
   attendance_modes: ["in_person", "online"],
   links: [
     { label: "eTrade Portal", url: "https://etrade.gov.et" },
-    { label: "MoTRI", url: "https://www.motri.gov.et" }
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Online%20via%20eTrade%20and%20at%20MoTRI%2Fregional%20trade%20offices%20where%20required%2C%20Ethiopia" }
   ]
 };
 
@@ -384,7 +404,8 @@ CREATE process:vat_registration CONTENT {
   attendance_modes: ["in_person", "online"],
   links: [
     { label: "Ministry of Revenues", url: "https://www.mor.gov.et/web/mor/mor" },
-    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" }
+    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Ministry%20of%20Revenues%20branch%20or%20approved%20online%20filing%20channel%2C%20Ethiopia" }
   ]
 };
 
@@ -398,7 +419,8 @@ CREATE process:import_export_code_registration CONTENT {
   attendance_modes: ["in_person", "online"],
   links: [
     { label: "eTrade Portal", url: "https://etrade.gov.et" },
-    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" }
+    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Trade%20and%20revenue%20service%20offices%2C%20plus%20approved%20digital%20channels%2C%20Ethiopia" }
   ]
 };
 
@@ -411,7 +433,8 @@ CREATE process:building_construction_permit CONTENT {
   location: "City/regional construction permit and control authority office",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "Addis Permit and Control", url: "https://www.aacpco.gov.et/" }
+    { label: "Addis Cadastre and Permit", url: "https://addiscadaster.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=City%2Fregional%20construction%20permit%20and%20control%20authority%20office%2C%20Ethiopia" }
   ]
 };
 
@@ -424,7 +447,8 @@ CREATE process:water_new_connection CONTENT {
   location: "City water and sewerage authority customer service office",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "Addis Ababa Water and Sewerage Authority", url: "https://www.aawsa.gov.et/" }
+    { label: "Addis Ababa Water and Sewerage Authority", url: "https://www.aawsa.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=City%20water%20and%20sewerage%20authority%20customer%20service%20office%2C%20Ethiopia" }
   ]
 };
 
@@ -437,7 +461,8 @@ CREATE process:vehicle_ownership_transfer CONTENT {
   location: "Driver and Vehicle License Control Authority branch",
   attendance_modes: ["in_person"],
   links: [
-    { label: "DVLCA", url: "https://www.dvlca.gov.et/" }
+    { label: "DVLCA", url: "https://www.dvlca.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Driver%20and%20Vehicle%20License%20Control%20Authority%20branch%2C%20Ethiopia" }
   ]
 };
 
@@ -450,7 +475,8 @@ CREATE process:land_holding_certificate_issuance CONTENT {
   location: "City/regional land administration and land information service office",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "Addis Ababa City Administration", url: "https://www.aaca.gov.et/" }
+    { label: "Addis Ababa Land Bureau", url: "https://www.aalb.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=City%2Fregional%20land%20administration%20and%20land%20information%20service%20office%2C%20Ethiopia" }
   ]
 };
 
@@ -463,7 +489,8 @@ CREATE process:land_lease_transfer CONTENT {
   location: "City/regional land administration transfer desk",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Addis Ababa City Administration", url: "https://www.aaca.gov.et/" }
+    { label: "Addis Ababa Land Bureau", url: "https://www.aalb.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=City%2Fregional%20land%20administration%20transfer%20desk%2C%20Ethiopia" }
   ]
 };
 
@@ -476,7 +503,8 @@ CREATE process:cadastral_map_and_boundary_certificate CONTENT {
   location: "Land survey/cadastre service office in your city or region",
   attendance_modes: ["in_person", "online"],
   links: [
-    { label: "Addis Ababa City Administration", url: "https://www.aaca.gov.et/" }
+    { label: "Addis Ababa Land Bureau", url: "https://www.aalb.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Land%20survey%2Fcadastre%20service%20office%20in%20your%20city%20or%20region%2C%20Ethiopia" }
   ]
 };
 
@@ -489,7 +517,8 @@ CREATE process:property_mortgage_registration CONTENT {
   location: "Land registry/encumbrance registration office",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Addis Ababa City Administration", url: "https://www.aaca.gov.et/" }
+    { label: "Addis Ababa Land Bureau", url: "https://www.aalb.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Land%20registry%2Fencumbrance%20registration%20office%2C%20Ethiopia" }
   ]
 };
 
@@ -502,7 +531,8 @@ CREATE process:medical_death_notice CONTENT {
   location: "Hospital or health facility where death is confirmed",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Ministry of Health", url: "https://www.moh.gov.et/" }
+    { label: "Ministry of Health", url: "https://www.moh.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Hospital%20or%20health%20facility%20where%20death%20is%20confirmed%2C%20Ethiopia" }
   ]
 };
 
@@ -515,7 +545,8 @@ CREATE process:witness_affidavit_notarization CONTENT {
   location: "Notary/document authentication office or other competent legal authority",
   attendance_modes: ["in_person"],
   links: [
-    { label: "Ministry of Justice", url: "https://moj.gov.et/" }
+    { label: "Ministry of Justice", url: "https://moj.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Notary%2Fdocument%20authentication%20office%20or%20other%20competent%20legal%20authority%2C%20Ethiopia" }
   ]
 };
 
@@ -525,11 +556,13 @@ CREATE process:witness_affidavit_notarization CONTENT {
 -- ---------------------------------------------------------------------
 CREATE task:passport_prepare_docs CONTENT {
   title: "Prepare Required Documents",
-  description: "Collect all required identity and civil-status documents before starting online application."
+  description: "Collect all required identity and civil-status documents before starting online application.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:passport_birth_certificate CONTENT {
   title: "Birth Certificate",
   description: "Prepare authenticated birth certificate (required for applicants under 40 per ICS guidance).",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Birth Certificate", process_key: "birth_certificate_issuance" }
@@ -538,6 +571,7 @@ CREATE task:passport_birth_certificate CONTENT {
 CREATE task:passport_kebele_id CONTENT {
   title: "Kebele ID or Support Letter",
   description: "Bring renewed Kebele ID. If temporary ID is used, include official support letter from issuing office.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" }
@@ -546,6 +580,7 @@ CREATE task:passport_kebele_id CONTENT {
 CREATE task:passport_fayda_id CONTENT {
   title: "Fayda / National ID Ready",
   description: "Prepare Fayda/National ID credentials where required for online service account verification.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Fayda ID / FIN", process_key: "fayda_registration" }
@@ -555,48 +590,61 @@ CREATE task:passport_fayda_id CONTENT {
 CREATE task:passport_online_application CONTENT {
   title: "Complete Online Application",
   description: "Create or log into the passport e-service, complete form details, and confirm appointment slot.",
+  output: "Submission receipt or stamped application copy.",
   links: [
     { label: "ICS Online Services", url: "https://www.ics.gov.et/service" }
   ]
 };
 CREATE task:passport_fill_form CONTENT {
   title: "Fill Application Form",
-  description: "Enter personal details exactly as shown on identity documents."
+  description: "Enter personal details exactly as shown on identity documents.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:passport_pay_window CONTENT {
   title: "Pay Within Time Window",
-  description: "Complete payment within stated time window after application submission."
+  description: "Complete payment within stated time window after application submission.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 CREATE task:passport_keep_confirmation CONTENT {
   title: "Save Appointment Confirmation",
-  description: "Keep your appointment confirmation and payment reference for appointment day."
+  description: "Keep your appointment confirmation and payment reference for appointment day.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:passport_appointment CONTENT {
   title: "Attend Appointment and Biometrics",
   description: "Bring originals and complete fingerprint/photo capture at the assigned office.",
-  location: "Assigned ICS branch from appointment confirmation"
+  output: "Biometric capture confirmation recorded by the service office.",
+  location: "Assigned ICS branch from appointment confirmation",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Assigned%20ICS%20branch%20from%20appointment%20confirmation%2C%20Ethiopia" }
+  ],
 };
 CREATE task:passport_bring_originals CONTENT {
   title: "Bring Originals + Copies",
-  description: "Bring original documents and copies requested in your appointment instructions."
+  description: "Bring original documents and copies requested in your appointment instructions.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:passport_biometrics CONTENT {
   title: "Fingerprint and Photo Capture",
-  description: "Complete biometric capture and any final verification required by the officer."
+  description: "Complete biometric capture and any final verification required by the officer.",
+  output: "Biometric capture confirmation recorded by the service office.",
 };
 
 CREATE task:passport_collection CONTENT {
   title: "Track and Collect Passport",
-  description: "Monitor status and collect your passport using the slip/reference issued at submission."
+  description: "Monitor status and collect your passport using the slip/reference issued at submission.",
+  output: "Status update reference from official tracking channels.",
 };
 CREATE task:passport_track_status CONTENT {
   title: "Track Application Status",
-  description: "Track approval/issuance status using official communication channels."
+  description: "Track approval/issuance status using official communication channels.",
+  output: "Status update reference from official tracking channels.",
 };
 CREATE task:passport_collect CONTENT {
   title: "Collect Passport",
   description: "Appear for collection with required reference slip and ID.",
+  output: "Issued passport booklet and collection acknowledgment.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -629,11 +677,13 @@ RELATE task:passport_collection->requires->task:passport_collect SET sort_order 
 -- ---------------------------------------------------------------------
 CREATE task:fayda_prepare_evidence CONTENT {
   title: "Prepare Identity and Address Evidence",
-  description: "Prepare identity proof and address proof (or witness confirmation where accepted)."
+  description: "Prepare identity proof and address proof (or witness confirmation where accepted).",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:fayda_identity_proof CONTENT {
   title: "Identity Proof",
   description: "Use accepted proof (e.g., old Kebele ID, passport, driver license, voter ID, student ID, tax ID, etc.).",
+  output: "Accepted evidence package prepared and ready for verification.",
   links: [
     { label: "Fayda Accepted Identity Proofs", url: "https://id.gov.et/proof" }
   ],
@@ -649,51 +699,65 @@ CREATE task:fayda_identity_proof CONTENT {
 };
 CREATE task:fayda_address_proof CONTENT {
   title: "Address Proof or Witness",
-  description: "Bring accepted residence evidence (utility/rental/bank/insurance docs) or approved witness route."
+  description: "Bring accepted residence evidence (utility/rental/bank/insurance docs) or approved witness route.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:fayda_choose_center CONTENT {
   title: "Choose Registration Center",
   description: "Select nearby official enrollment center (ethio telecom, banks, post office, or designated center).",
+  output: "FIN/ID enrollment reference or credential activation confirmation.",
   location: "Nearest Fayda enrollment center",
   links: [
-    { label: "Find Fayda Center", url: "https://id.gov.et/service-locations" }
+    { label: "Find Fayda Center", url: "https://id.gov.et/services" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Nearest%20Fayda%20enrollment%20center%2C%20Ethiopia" }
   ]
 };
 CREATE task:fayda_pre_register CONTENT {
   title: "Pre-Register (if offered)",
-  description: "Use available pre-registration flow to reduce waiting time at the center."
+  description: "Use available pre-registration flow to reduce waiting time at the center.",
+  output: "FIN/ID enrollment reference or credential activation confirmation.",
 };
 CREATE task:fayda_visit_center CONTENT {
   title: "Visit Selected Center",
-  description: "Visit in person with all required evidence and references."
+  description: "Visit in person with all required evidence and references.",
+  output: "Accepted evidence package prepared and ready for verification.",
 };
 
 CREATE task:fayda_biometrics CONTENT {
   title: "Complete Biometric Enrollment",
-  description: "Submit demographic data and biometric capture (photo, fingerprint, and/or iris as requested)."
+  description: "Submit demographic data and biometric capture (photo, fingerprint, and/or iris as requested).",
+  output: "Biometric capture confirmation recorded by the service office.",
 };
 CREATE task:fayda_demographics CONTENT {
   title: "Demographic Data Entry",
-  description: "Confirm name, date of birth, and contact details exactly."
+  description: "Confirm name, date of birth, and contact details exactly.",
+  output: "FIN/ID enrollment reference or credential activation confirmation.",
 };
 CREATE task:fayda_bio_capture CONTENT {
   title: "Biometric Capture",
-  description: "Complete full biometric capture and verify before final submission."
+  description: "Complete full biometric capture and verify before final submission.",
+  output: "Biometric capture confirmation recorded by the service office.",
 };
 
 CREATE task:fayda_get_fin CONTENT {
   title: "Receive FIN and Credentials",
   description: "Receive your Fayda Identification Number (FIN) and activate digital credential flow.",
-  location: "At the same enrollment center and official follow-up channels"
+  output: "Issued document/card/certificate and collection acknowledgment.",
+  location: "At the same enrollment center and official follow-up channels",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=At%20the%20same%20enrollment%20center%20and%20official%20follow-up%20channels%2C%20Ethiopia" }
+  ],
 };
 CREATE task:fayda_fin_sms CONTENT {
   title: "Receive FIN Notification",
-  description: "Check SMS/official notification for FIN and enrollment confirmation."
+  description: "Check SMS/official notification for FIN and enrollment confirmation.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:fayda_credential CONTENT {
   title: "Activate Credential",
-  description: "Download/activate available digital credential or follow up for physical credential options."
+  description: "Download/activate available digital credential or follow up for physical credential options.",
+  output: "Status update reference from official tracking channels.",
 };
 
 RELATE process:fayda_registration->requires->task:fayda_prepare_evidence SET sort_order = 1;
@@ -719,11 +783,13 @@ RELATE task:fayda_get_fin->requires->task:fayda_credential SET sort_order = 2;
 -- ---------------------------------------------------------------------
 CREATE task:cr_prepare_core_documents CONTENT {
   title: "Prepare Core Documents",
-  description: "Prepare TIN, ID, and authorization documents needed for registration."
+  description: "Prepare TIN, ID, and authorization documents needed for registration.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:cr_tin CONTENT {
   title: "TIN Certificate",
   description: "Obtain valid TIN certificate before filing commercial registration.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "TIN", process_key: "tin_registration" }
@@ -732,6 +798,7 @@ CREATE task:cr_tin CONTENT {
 CREATE task:cr_id CONTENT {
   title: "Valid ID / Passport",
   description: "Prepare owner/manager identification document.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -742,6 +809,7 @@ CREATE task:cr_id CONTENT {
 CREATE task:cr_poa CONTENT {
   title: "Power of Attorney (if represented)",
   description: "If an agent files on your behalf, prepare notarized power of attorney and agent ID.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Witness Statement / Affidavit", process_key: "witness_affidavit_notarization" }
@@ -750,35 +818,42 @@ CREATE task:cr_poa CONTENT {
 
 CREATE task:cr_prepare_business_evidence CONTENT {
   title: "Prepare Business Evidence",
-  description: "Collect legal existence and ownership/authorization documents for the entity."
+  description: "Collect legal existence and ownership/authorization documents for the entity.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:cr_legal_existence CONTENT {
   title: "Legal Existence Certificate",
-  description: "Provide legal existence documents where applicable (company/branch structures)."
+  description: "Provide legal existence documents where applicable (company/branch structures).",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 CREATE task:cr_branch_resolution CONTENT {
   title: "Branch Resolution / Shareholder Decision",
-  description: "For branches or represented entities, include required board/shareholder authorization."
+  description: "For branches or represented entities, include required board/shareholder authorization.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:cr_support_letter CONTENT {
   title: "Support Letter (if applicable)",
-  description: "Add official support letter when filing route requires it."
+  description: "Add official support letter when filing route requires it.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:cr_submit CONTENT {
   title: "Submit Registration",
   description: "Submit application through the designated online government platform and follow correction requests.",
+  output: "Submission receipt or stamped application copy.",
   links: [
     { label: "eTrade Portal", url: "https://etrade.gov.et" }
   ]
 };
 CREATE task:cr_online_submission CONTENT {
   title: "Online Submission",
-  description: "Upload all documents and complete registration form accurately."
+  description: "Upload all documents and complete registration form accurately.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:cr_get_certificate CONTENT {
   title: "Receive Registration Output",
-  description: "Download/collect registration certificate and keep it for licensing workflow."
+  description: "Download/collect registration certificate and keep it for licensing workflow.",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 
 RELATE process:commercial_registration->requires->task:cr_prepare_core_documents SET sort_order = 1;
@@ -802,11 +877,13 @@ RELATE task:cr_submit->requires->task:cr_get_certificate SET sort_order = 2;
 -- ---------------------------------------------------------------------
 CREATE task:tln_prerequisites CONTENT {
   title: "Confirm Prerequisites",
-  description: "A trade license requires commercial registration and competency compliance where applicable."
+  description: "A trade license requires commercial registration and competency compliance where applicable.",
+  output: "Issued permit/license document or approval reference.",
 };
 CREATE task:tln_has_registration CONTENT {
   title: "Commercial Registration Completed",
   description: "Confirm valid registration details before licensing.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Commercial Registration Certificate", process_key: "commercial_registration" }
@@ -814,12 +891,14 @@ CREATE task:tln_has_registration CONTENT {
 };
 CREATE task:tln_competency CONTENT {
   title: "Competency Certificate",
-  description: "Obtain competency proof for regulated business activity categories."
+  description: "Obtain competency proof for regulated business activity categories.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:tln_application CONTENT {
   title: "Submit New License Application",
   description: "File a new trade license request through official portal with activity details and attachments.",
+  output: "Submission receipt or stamped application copy.",
   links: [
     { label: "eTrade Portal", url: "https://etrade.gov.et" }
   ],
@@ -831,24 +910,29 @@ CREATE task:tln_application CONTENT {
 };
 CREATE task:tln_activity_selection CONTENT {
   title: "Select Correct Business Activity",
-  description: "Choose the exact business activity code/category for your operation."
+  description: "Choose the exact business activity code/category for your operation.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:tln_upload_documents CONTENT {
   title: "Upload Required Documents",
-  description: "Attach all required files and declarations in correct formats."
+  description: "Attach all required files and declarations in correct formats.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:tln_receive CONTENT {
   title: "Receive and Verify License",
-  description: "Collect license output and verify legal name, activity, and validity details."
+  description: "Collect license output and verify legal name, activity, and validity details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:tln_verify CONTENT {
   title: "Verify License Details",
-  description: "Verify spelling, activity class, and issue dates before use."
+  description: "Verify spelling, activity class, and issue dates before use.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:tln_archive CONTENT {
   title: "Archive License Copy",
-  description: "Store signed copy digitally and physically for inspections and renewals."
+  description: "Store signed copy digitally and physically for inspections and renewals.",
+  output: "Issued permit/license document or approval reference.",
 };
 
 RELATE process:trade_license_new->requires->task:tln_prerequisites SET sort_order = 1;
@@ -871,6 +955,7 @@ RELATE task:tln_receive->requires->task:tln_archive SET sort_order = 2;
 CREATE task:tlr_prepare CONTENT {
   title: "Prepare Renewal Documents",
   description: "Gather annual compliance documents required before filing renewal.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Current Trade License", process_key: "trade_license_new" }
@@ -878,40 +963,48 @@ CREATE task:tlr_prepare CONTENT {
 };
 CREATE task:tlr_audit CONTENT {
   title: "Audit Report",
-  description: "Prepare latest approved audit report (where required by business type)."
+  description: "Prepare latest approved audit report (where required by business type).",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:tlr_tax_clearance CONTENT {
   title: "Tax Clearance",
-  description: "Obtain valid tax clearance certificate for renewal period."
+  description: "Obtain valid tax clearance certificate for renewal period.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:tlr_submit CONTENT {
   title: "Submit Renewal Request",
   description: "Submit renewal online before license expiry and complete fee obligations.",
+  output: "Official payment receipt (bank slip or digital receipt).",
   links: [
     { label: "eTrade Portal", url: "https://etrade.gov.et" }
   ]
 };
 CREATE task:tlr_before_expiry CONTENT {
   title: "Submit Before Expiry",
-  description: "File early to avoid interruption and potential penalties."
+  description: "File early to avoid interruption and potential penalties.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:tlr_fee CONTENT {
   title: "Pay Renewal Fee",
-  description: "Pay official renewal fees and keep receipt reference."
+  description: "Pay official renewal fees and keep receipt reference.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:tlr_receive CONTENT {
   title: "Receive Renewed License",
-  description: "Collect renewed license and verify updated validity window."
+  description: "Collect renewed license and verify updated validity window.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:tlr_verify CONTENT {
   title: "Verify Renewal Validity",
-  description: "Check renewed period and activity details immediately."
+  description: "Check renewed period and activity details immediately.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:tlr_archive CONTENT {
   title: "Archive Renewed Copy",
-  description: "Store renewed copy with previous license history."
+  description: "Store renewed copy with previous license history.",
+  output: "Issued permit/license document or approval reference.",
 };
 
 RELATE process:trade_license_renewal->requires->task:tlr_prepare SET sort_order = 1;
@@ -934,6 +1027,7 @@ RELATE task:tlr_receive->requires->task:tlr_archive SET sort_order = 2;
 CREATE task:bv_prepare_documents CONTENT {
   title: "Prepare Visa Documents",
   description: "Collect passport, photos, invitation letter, and business proof documents.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Passport", process_key: "passport" }
@@ -942,6 +1036,7 @@ CREATE task:bv_prepare_documents CONTENT {
 CREATE task:bv_passport CONTENT {
   title: "Valid Passport",
   description: "Passport must be valid for at least six months from intended entry date.",
+  output: "Passport process reference (application or issuance record).",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Passport", process_key: "passport" }
@@ -949,40 +1044,48 @@ CREATE task:bv_passport CONTENT {
 };
 CREATE task:bv_photos CONTENT {
   title: "Passport Photos",
-  description: "Prepare recent passport-size photos matching visa photo requirements."
+  description: "Prepare recent passport-size photos matching visa photo requirements.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:bv_invitation CONTENT {
   title: "Invitation and Business Letter",
-  description: "Prepare invitation letter from Ethiopian host and supporting business letter/documents."
+  description: "Prepare invitation letter from Ethiopian host and supporting business letter/documents.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:bv_submit CONTENT {
   title: "Submit Visa Application",
   description: "Complete application form, upload documents, and pay required fee.",
+  output: "Official payment receipt (bank slip or digital receipt).",
   links: [
     { label: "ICS Services", url: "https://www.ics.gov.et/service" }
   ]
 };
 CREATE task:bv_form CONTENT {
   title: "Complete Application Form",
-  description: "Fill visa form with matching personal/passport details."
+  description: "Fill visa form with matching personal/passport details.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:bv_fee CONTENT {
   title: "Pay Visa Fee",
-  description: "Pay official fee through accepted channels and keep receipt."
+  description: "Pay official fee through accepted channels and keep receipt.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:bv_followup CONTENT {
   title: "Track Decision",
-  description: "Monitor processing status and provide additional documents if requested."
+  description: "Monitor processing status and provide additional documents if requested.",
+  output: "Status update reference from official tracking channels.",
 };
 CREATE task:bv_track CONTENT {
   title: "Track Processing",
-  description: "Track status in official portal/communications until approval."
+  description: "Track status in official portal/communications until approval.",
+  output: "Status update reference from official tracking channels.",
 };
 CREATE task:bv_additional CONTENT {
   title: "Respond to Additional Requests",
-  description: "If asked, submit additional files before deadline."
+  description: "If asked, submit additional files before deadline.",
+  output: "Submission receipt or stamped application copy.",
 };
 
 RELATE process:business_visa->requires->task:bv_prepare_documents SET sort_order = 1;
@@ -1006,6 +1109,7 @@ RELATE task:bv_followup->requires->task:bv_additional SET sort_order = 2;
 CREATE task:trm_prepare_passport_visa CONTENT {
   title: "Prepare Passport and Visa Records",
   description: "Prepare passport and visa copies required for residence permit filing.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Passport", process_key: "passport" }
@@ -1013,20 +1117,24 @@ CREATE task:trm_prepare_passport_visa CONTENT {
 };
 CREATE task:trm_passport_validity CONTENT {
   title: "Passport Validity (6+ months)",
-  description: "Passport must have at least six months remaining validity."
+  description: "Passport must have at least six months remaining validity.",
+  output: "Passport process reference (application or issuance record).",
 };
 CREATE task:trm_visa_stamp_copy CONTENT {
   title: "Visa + Entry Stamp Copy",
-  description: "Prepare clear copy of current visa and latest entry stamp page."
+  description: "Prepare clear copy of current visa and latest entry stamp page.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:trm_extended_visa_copy CONTENT {
   title: "Last Extended Visa (if any)",
-  description: "If previously extended, include the latest extension visa copy."
+  description: "If previously extended, include the latest extension visa copy.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:trm_prepare_marriage_documents CONTENT {
   title: "Prepare Marriage Documents",
   description: "Prepare marriage certificate and spouse identity evidence.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Marriage Certificate", process_key: "marriage_certificate_registration" }
@@ -1035,6 +1143,7 @@ CREATE task:trm_prepare_marriage_documents CONTENT {
 CREATE task:trm_marriage_certificate CONTENT {
   title: "Authenticated Marriage Certificate",
   description: "Prepare properly authenticated marriage certificate.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Marriage Certificate", process_key: "marriage_certificate_registration" }
@@ -1042,11 +1151,13 @@ CREATE task:trm_marriage_certificate CONTENT {
 };
 CREATE task:trm_translation CONTENT {
   title: "Translation (if needed)",
-  description: "If certificate is not in English/Amharic as required, prepare official translation."
+  description: "If certificate is not in English/Amharic as required, prepare official translation.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:trm_spouse_id CONTENT {
   title: "Spouse ID / Passport",
   description: "Prepare Ethiopian spouse Kebele ID or passport copy.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1057,35 +1168,43 @@ CREATE task:trm_spouse_id CONTENT {
 CREATE task:trm_submit CONTENT {
   title: "Submit Residence Application",
   description: "Submit completed form with photos and required in-person attendance.",
+  output: "Submission receipt or stamped application copy.",
   location: "ICS residence service desk",
   links: [
-    { label: "Residence Services", url: "https://www.ics.gov.et/service" }
+    { label: "Residence Services", url: "https://www.ics.gov.et/service" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=ICS%20residence%20service%20desk%2C%20Ethiopia" }
   ]
 };
 CREATE task:trm_form CONTENT {
   title: "Completed Application Form",
-  description: "Complete residence permit form accurately and sign where required."
+  description: "Complete residence permit form accurately and sign where required.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:trm_photos CONTENT {
   title: "Recent Photos",
-  description: "Prepare required passport-size photos for file."
+  description: "Prepare required passport-size photos for file.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:trm_spouse_presence CONTENT {
   title: "Spouse In-Person Presence",
-  description: "Ensure Ethiopian spouse appears with applicant when required."
+  description: "Ensure Ethiopian spouse appears with applicant when required.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:trm_renewal CONTENT {
   title: "Track Expiry and Renewal",
-  description: "Track permit validity and renew before expiration."
+  description: "Track permit validity and renew before expiration.",
+  output: "Status update reference from official tracking channels.",
 };
 CREATE task:trm_expiry_monitor CONTENT {
   title: "Monitor Expiry Date",
-  description: "Set reminders for permit expiration timeline."
+  description: "Set reminders for permit expiration timeline.",
+  output: "Issued permit/license document or approval reference.",
 };
 CREATE task:trm_renew_before_expiry CONTENT {
   title: "Renew Before Deadline",
-  description: "Start renewal process ahead of deadline to avoid status issues."
+  description: "Start renewal process ahead of deadline to avoid status issues.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 RELATE process:temporary_residence_marriage->requires->task:trm_prepare_passport_visa SET sort_order = 1;
@@ -1115,6 +1234,7 @@ RELATE task:trm_renewal->requires->task:trm_renew_before_expiry SET sort_order =
 CREATE task:eoid_prepare_core CONTENT {
   title: "Prepare Core Application Documents",
   description: "Prepare form, passport, visa, and entry-stamp related requirements.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Passport", process_key: "passport" }
@@ -1122,11 +1242,13 @@ CREATE task:eoid_prepare_core CONTENT {
 };
 CREATE task:eoid_form CONTENT {
   title: "Application Form",
-  description: "Complete Ethiopian Origin ID application form."
+  description: "Complete Ethiopian Origin ID application form.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:eoid_passport CONTENT {
   title: "Passport Validity (6+ months)",
   description: "Prepare valid passport with minimum six months validity.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Passport", process_key: "passport" }
@@ -1134,20 +1256,24 @@ CREATE task:eoid_passport CONTENT {
 };
 CREATE task:eoid_visa_and_stamp CONTENT {
   title: "Visa + Last Entry Stamp",
-  description: "Prepare current visa and latest entry stamp copies."
+  description: "Prepare current visa and latest entry stamp copies.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:eoid_extended_visa CONTENT {
   title: "Last Extended Visa (if any)",
-  description: "If previously extended, include latest extension record."
+  description: "If previously extended, include latest extension record.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:eoid_prove_origin CONTENT {
   title: "Prepare Origin Proof",
-  description: "Provide proof of Ethiopian lineage and parent identity documents."
+  description: "Provide proof of Ethiopian lineage and parent identity documents.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:eoid_old_passport_or_birth CONTENT {
   title: "Old Ethiopian Passport or Birth Certificate",
   description: "Provide old machine-readable Ethiopian passport or authenticated birth certificate.",
+  output: "Passport process reference (application or issuance record).",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Birth Certificate", process_key: "birth_certificate_issuance" },
@@ -1157,6 +1283,7 @@ CREATE task:eoid_old_passport_or_birth CONTENT {
 CREATE task:eoid_parent_id CONTENT {
   title: "Parent Kebele ID or Passport",
   description: "Provide parent Kebele ID/passport copy as supporting lineage proof.",
+  output: "Passport process reference (application or issuance record).",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1166,6 +1293,7 @@ CREATE task:eoid_parent_id CONTENT {
 CREATE task:eoid_previous_kebele_if_foreign CONTENT {
   title: "Previous Kebele ID (if applicable)",
   description: "If applicant is now a foreign citizen, include previous Ethiopian Kebele ID evidence where available.",
+  output: "Accepted evidence package prepared and ready for verification.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" }
@@ -1174,19 +1302,23 @@ CREATE task:eoid_previous_kebele_if_foreign CONTENT {
 
 CREATE task:eoid_special_cases CONTENT {
   title: "Special Case Documents",
-  description: "Prepare additional legal documents for under-18, name-change, or document-gap cases."
+  description: "Prepare additional legal documents for under-18, name-change, or document-gap cases.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:eoid_under18_adoption CONTENT {
   title: "Under-18 Adoption Documents",
-  description: "If applicant is under 18, include parent/guardian and adoption court documents where required."
+  description: "If applicant is under 18, include parent/guardian and adoption court documents where required.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:eoid_name_change CONTENT {
   title: "Name-Change Court Decision",
-  description: "If applicant name differs from parent records, include court decision and gazette publication evidence."
+  description: "If applicant name differs from parent records, include court decision and gazette publication evidence.",
+  output: "Accepted evidence package prepared and ready for verification.",
 };
 CREATE task:eoid_document_gap CONTENT {
   title: "Document-Gap Evidence",
   description: "When primary lineage documents are missing, include alternate evidence such as death certificate, as requested.",
+  output: "Accepted evidence package prepared and ready for verification.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Birth Certificate", process_key: "birth_certificate_issuance" },
@@ -1200,22 +1332,27 @@ CREATE task:eoid_document_gap CONTENT {
 CREATE task:eoid_submit CONTENT {
   title: "Submit and Follow Up",
   description: "Submit in person (no proxy), track issuance, and monitor renewal timeline.",
+  output: "Status update reference from official tracking channels.",
   location: "ICS origin ID service desk",
   links: [
-    { label: "Origin ID Services", url: "https://www.ics.gov.et/service" }
+    { label: "Origin ID Services", url: "https://www.ics.gov.et/service" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=ICS%20origin%20ID%20service%20desk%2C%20Ethiopia" }
   ]
 };
 CREATE task:eoid_photo CONTENT {
   title: "Recent Photo",
-  description: "Provide one recent passport-size photo as required."
+  description: "Provide one recent passport-size photo as required.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:eoid_in_person CONTENT {
   title: "In-Person Submission (No Proxy)",
-  description: "Applicant must appear in person; proxy processing is not accepted."
+  description: "Applicant must appear in person; proxy processing is not accepted.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:eoid_track CONTENT {
   title: "Track Issuance and Renewal",
-  description: "Track processing updates and plan renewal before card expiration."
+  description: "Track processing updates and plan renewal before card expiration.",
+  output: "Status update reference from official tracking channels.",
 };
 
 RELATE process:ethiopian_origin_id->requires->task:eoid_prepare_core SET sort_order = 1;
@@ -1247,18 +1384,22 @@ RELATE task:eoid_submit->requires->task:eoid_track SET sort_order = 3;
 CREATE task:kebele_prepare_documents CONTENT {
   title: "Prepare Residency Documents",
   description: "Prepare required residency and identity evidence before visiting the kebele office.",
+  output: "Prepared document package ready for the next submission step.",
   location: "Your local kebele administration office",
   links: [
-    { label: "Kebele Services Detail", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" }
+    { label: "Kebele Services Detail", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Your%20local%20kebele%20administration%20office%2C%20Ethiopia" }
   ]
 };
 CREATE task:kebele_residence_evidence CONTENT {
   title: "Residence Evidence",
-  description: "Prepare house number / rent evidence or other residency proof required by your kebele."
+  description: "Prepare house number / rent evidence or other residency proof required by your kebele.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:kebele_identity_evidence CONTENT {
   title: "Identity Evidence",
   description: "Prepare birth record, old ID, or equivalent identity evidence requested by the office.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Fayda ID / FIN", process_key: "fayda_registration" },
@@ -1270,28 +1411,37 @@ CREATE task:kebele_identity_evidence CONTENT {
 CREATE task:kebele_submit_request CONTENT {
   title: "Submit Application at Kebele",
   description: "Submit request form in person and complete any local verification steps.",
-  location: "Kebele front office / civil registration desk"
+  output: "Submission receipt or stamped application copy.",
+  location: "Kebele front office / civil registration desk",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Kebele%20front%20office%20%2F%20civil%20registration%20desk%2C%20Ethiopia" }
+  ],
 };
 CREATE task:kebele_form_submission CONTENT {
   title: "Complete and Submit Form",
-  description: "Fill the official kebele ID form and submit with supporting documents."
+  description: "Fill the official kebele ID form and submit with supporting documents.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:kebele_fee_receipt CONTENT {
   title: "Pay Applicable Service Fee",
-  description: "Pay any service fee and keep payment receipt."
+  description: "Pay any service fee and keep payment receipt.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:kebele_collect_card CONTENT {
   title: "Collect or Renew Kebele ID",
-  description: "Return on the advised date to collect issued/renewed ID and verify details."
+  description: "Return on the advised date to collect issued/renewed ID and verify details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:kebele_verify_card CONTENT {
   title: "Verify Card Details",
-  description: "Verify name, address, and validity period before leaving the office."
+  description: "Verify name, address, and validity period before leaving the office.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:kebele_renewal_cycle CONTENT {
   title: "Track Renewal Period",
-  description: "Set reminders for renewals so the ID stays valid for dependent services."
+  description: "Set reminders for renewals so the ID stays valid for dependent services.",
+  output: "Status update reference from official tracking channels.",
 };
 
 RELATE process:kebele_id_residency->requires->task:kebele_prepare_documents SET sort_order = 1;
@@ -1314,9 +1464,11 @@ RELATE task:kebele_collect_card->requires->task:kebele_renewal_cycle SET sort_or
 CREATE task:dl_prepare_prerequisites CONTENT {
   title: "Prepare Licensing Prerequisites",
   description: "Prepare required identity and training/medical prerequisites before testing.",
+  output: "Prepared document package ready for the next submission step.",
   location: "Authorized transport service center",
   links: [
-    { label: "DVLCA Services", url: "https://www.dvlca.gov.et/" }
+    { label: "DVLCA Services", url: "https://www.dvlca.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Authorized%20transport%20service%20center%2C%20Ethiopia" }
   ],
   required_documents_mode: "one_of",
   required_documents: [
@@ -1327,39 +1479,53 @@ CREATE task:dl_prepare_prerequisites CONTENT {
 };
 CREATE task:dl_medical_certificate CONTENT {
   title: "Medical Fitness Certificate",
-  description: "Obtain medical fitness evidence as required for license class."
+  description: "Obtain medical fitness evidence as required for license class.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:dl_training_records CONTENT {
   title: "Training School Records",
-  description: "Prepare approved driving school completion evidence where required."
+  description: "Prepare approved driving school completion evidence where required.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:dl_examinations CONTENT {
   title: "Take Required Examinations",
   description: "Complete theory and practical tests for your target license class.",
-  location: "Testing center assigned by transport authority"
+  output: "Issued permit/license document or approval reference.",
+  location: "Testing center assigned by transport authority",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Testing%20center%20assigned%20by%20transport%20authority%2C%20Ethiopia" }
+  ],
 };
 CREATE task:dl_theory_test CONTENT {
   title: "Theory Test",
-  description: "Pass the road rules and traffic signs exam."
+  description: "Pass the road rules and traffic signs exam.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:dl_practical_test CONTENT {
   title: "Practical Driving Test",
-  description: "Pass practical driving assessment by authorized examiner."
+  description: "Pass practical driving assessment by authorized examiner.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:dl_issue_or_renew CONTENT {
   title: "Issue or Renew License Card",
   description: "Pay issuance/renewal fee and collect printed license.",
-  location: "DVLCA branch issuing office"
+  output: "Official payment receipt (bank slip or digital receipt).",
+  location: "DVLCA branch issuing office",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=DVLCA%20branch%20issuing%20office%2C%20Ethiopia" }
+  ],
 };
 CREATE task:dl_fee_payment CONTENT {
   title: "Fee Payment",
-  description: "Pay official fee and retain receipt for card collection."
+  description: "Pay official fee and retain receipt for card collection.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 CREATE task:dl_collect_license CONTENT {
   title: "Collect License Card",
-  description: "Collect card and verify class/category and validity dates."
+  description: "Collect card and verify class/category and validity dates.",
+  output: "Verified checklist entry or correction note.",
 };
 
 RELATE process:drivers_license_issue->requires->task:dl_prepare_prerequisites SET sort_order = 1;
@@ -1382,17 +1548,20 @@ RELATE task:dl_issue_or_renew->requires->task:dl_collect_license SET sort_order 
 CREATE task:voter_check_eligibility CONTENT {
   title: "Check Voter Eligibility",
   description: "Confirm age, citizenship, and residence eligibility before registration window opens.",
+  output: "Verified checklist entry or correction note.",
   links: [
     { label: "NEBE Voter Registration", url: "https://nebe.org.et/en/voters-registration" }
   ]
 };
 CREATE task:voter_age_citizenship CONTENT {
   title: "Age and Citizenship Requirement",
-  description: "Confirm you meet minimum age and citizenship requirements."
+  description: "Confirm you meet minimum age and citizenship requirements.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:voter_residence_proof CONTENT {
   title: "Residence Proof",
   description: "Prepare local residence evidence accepted by the registration station.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" }
@@ -1402,11 +1571,16 @@ CREATE task:voter_residence_proof CONTENT {
 CREATE task:voter_register_person CONTENT {
   title: "Register In Person",
   description: "Appear in person at designated polling station during registration period.",
-  location: "Designated polling station in your kebele"
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
+  location: "Designated polling station in your kebele",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Designated%20polling%20station%20in%20your%20kebele%2C%20Ethiopia" }
+  ],
 };
 CREATE task:voter_present_documents CONTENT {
   title: "Present Supporting Documents",
   description: "Present accepted identity/residence documents requested by officers.",
+  output: "Accepted evidence package prepared and ready for verification.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1415,20 +1589,24 @@ CREATE task:voter_present_documents CONTENT {
 };
 CREATE task:voter_capture_details CONTENT {
   title: "Record and Validate Details",
-  description: "Validate your demographic details before submission."
+  description: "Validate your demographic details before submission.",
+  output: "Verified checklist entry or correction note.",
 };
 
 CREATE task:voter_collect_card CONTENT {
   title: "Collect Voter Card",
-  description: "Collect your voter card and verify polling location details."
+  description: "Collect your voter card and verify polling location details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:voter_verify_card CONTENT {
   title: "Verify Card Information",
-  description: "Verify full name and polling station assignment."
+  description: "Verify full name and polling station assignment.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:voter_keep_card CONTENT {
   title: "Keep Card Safe",
-  description: "Store card securely for election day use."
+  description: "Store card securely for election day use.",
+  output: "Issued ID/card or verified identity credential.",
 };
 
 RELATE process:voter_registration->requires->task:voter_check_eligibility SET sort_order = 1;
@@ -1451,14 +1629,17 @@ RELATE task:voter_collect_card->requires->task:voter_keep_card SET sort_order = 
 CREATE task:student_confirm_enrollment CONTENT {
   title: "Confirm Enrollment Status",
   description: "Ensure active enrollment and registrar record before requesting student ID.",
+  output: "Issued ID/card or verified identity credential.",
   location: "Registrar office",
   links: [
-    { label: "Registrar Reference", url: "https://www.hu.edu.et/index.php/admission-regst" }
+    { label: "Registrar Reference", url: "https://www.hu.edu.et/index.php/admission-regst" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Registrar%20office%2C%20Ethiopia" }
   ]
 };
 CREATE task:student_registration_record CONTENT {
   title: "Registration / Admission Record",
   description: "Prepare current registration or admission confirmation.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Birth Certificate", process_key: "birth_certificate_issuance" },
@@ -1468,34 +1649,44 @@ CREATE task:student_registration_record CONTENT {
 };
 CREATE task:student_fee_status CONTENT {
   title: "Fee and Clearance Status",
-  description: "Complete tuition/clearance requirements required for ID issuance."
+  description: "Complete tuition/clearance requirements required for ID issuance.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:student_submit_id_request CONTENT {
   title: "Submit Student ID Request",
   description: "Submit ID request with photo and required academic records.",
-  location: "Registrar ID card desk"
+  output: "Submission receipt or stamped application copy.",
+  location: "Registrar ID card desk",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Registrar%20ID%20card%20desk%2C%20Ethiopia" }
+  ],
 };
 CREATE task:student_photo_submission CONTENT {
   title: "Submit Photo",
-  description: "Provide passport-style photo according to institution format."
+  description: "Provide passport-style photo according to institution format.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:student_data_verification CONTENT {
   title: "Verify Student Data",
-  description: "Verify spelling, department, and student number in the registrar system."
+  description: "Verify spelling, department, and student number in the registrar system.",
+  output: "Verified checklist entry or correction note.",
 };
 
 CREATE task:student_collect_or_replace CONTENT {
   title: "Collect or Replace Student ID",
-  description: "Collect printed ID and follow replacement route if lost/damaged."
+  description: "Collect printed ID and follow replacement route if lost/damaged.",
+  output: "Issued ID/card or verified identity credential.",
 };
 CREATE task:student_collect_card CONTENT {
   title: "Collect Student Card",
-  description: "Collect card and validate details."
+  description: "Collect card and validate details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:student_replacement CONTENT {
   title: "Replacement Request (If Needed)",
-  description: "If card is lost/damaged, file replacement request with required evidence."
+  description: "If card is lost/damaged, file replacement request with required evidence.",
+  output: "Submission receipt or stamped application copy.",
 };
 
 RELATE process:student_id_card->requires->task:student_confirm_enrollment SET sort_order = 1;
@@ -1518,6 +1709,7 @@ RELATE task:student_collect_or_replace->requires->task:student_replacement SET s
 CREATE task:tin_prepare_documents CONTENT {
   title: "Prepare Tax Registration Documents",
   description: "Prepare identity and business support documents required for TIN registration.",
+  output: "Prepared document package ready for the next submission step.",
   links: [
     { label: "Business Portal", url: "https://www.new.business.gov.et/" },
     { label: "Ministry of Revenues", url: "https://www.mor.gov.et/web/mor/mor" }
@@ -1526,6 +1718,7 @@ CREATE task:tin_prepare_documents CONTENT {
 CREATE task:tin_identity_evidence CONTENT {
   title: "Identity Evidence",
   description: "Prepare accepted identity evidence for taxpayer registration.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1534,34 +1727,44 @@ CREATE task:tin_identity_evidence CONTENT {
 };
 CREATE task:tin_business_support CONTENT {
   title: "Business Support Evidence (If Applicable)",
-  description: "If registering a business taxpayer, include business and address evidence."
+  description: "If registering a business taxpayer, include business and address evidence.",
+  output: "Accepted evidence package prepared and ready for verification.",
 };
 
 CREATE task:tin_submit_application CONTENT {
   title: "Submit TIN Registration Application",
   description: "Submit registration via the relevant revenue office or integrated portal channel.",
-  location: "Ministry of Revenues office or online portal"
+  output: "Submission receipt or stamped application copy.",
+  location: "Ministry of Revenues office or online portal",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Ministry%20of%20Revenues%20office%20or%20online%20portal%2C%20Ethiopia" }
+  ],
 };
 CREATE task:tin_complete_form CONTENT {
   title: "Complete Taxpayer Form",
-  description: "Complete taxpayer registration form with matching personal/business details."
+  description: "Complete taxpayer registration form with matching personal/business details.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:tin_receive_number CONTENT {
   title: "Receive TIN Number",
-  description: "Receive your assigned TIN and keep registration proof."
+  description: "Receive your assigned TIN and keep registration proof.",
+  output: "Issued document/card/certificate and collection acknowledgment.",
 };
 
 CREATE task:tin_activate_profile CONTENT {
   title: "Activate Tax Profile",
-  description: "Activate and maintain your tax profile for declarations/payments."
+  description: "Activate and maintain your tax profile for declarations/payments.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:tin_portal_access CONTENT {
   title: "Enable Portal Access",
-  description: "Set up login credentials for tax-related online services where available."
+  description: "Set up login credentials for tax-related online services where available.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:tin_keep_records CONTENT {
   title: "Keep TIN Records",
-  description: "Store TIN certificate/reference for licensing and compliance workflows."
+  description: "Store TIN certificate/reference for licensing and compliance workflows.",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 
 RELATE process:tin_registration->requires->task:tin_prepare_documents SET sort_order = 1;
@@ -1583,16 +1786,22 @@ RELATE task:tin_activate_profile->requires->task:tin_keep_records SET sort_order
 -- ---------------------------------------------------------------------
 CREATE task:bci_prepare_registry CONTENT {
   title: "Prepare Civil Registry Requirements",
-  description: "Confirm the responsible registry office and gather parent identity evidence."
+  description: "Confirm the responsible registry office and gather parent identity evidence.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:bci_find_registry_office CONTENT {
   title: "Identify Responsible Registry Office",
   description: "Confirm the office that serves the place of birth/residence before filing.",
-  location: "Civil registration office with jurisdiction"
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
+  location: "Civil registration office with jurisdiction",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Civil%20registration%20office%20with%20jurisdiction%2C%20Ethiopia" }
+  ],
 };
 CREATE task:bci_parent_identity CONTENT {
   title: "Parent Identity Evidence",
   description: "Prepare accepted parent identity documents for registration.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1603,28 +1812,34 @@ CREATE task:bci_parent_identity CONTENT {
 
 CREATE task:bci_submit_birth_registration CONTENT {
   title: "Submit Birth Registration",
-  description: "Submit birth registration with supporting evidence and complete the official form."
+  description: "Submit birth registration with supporting evidence and complete the official form.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:bci_birth_notice_or_witness CONTENT {
   title: "Birth Notice or Witness Evidence",
-  description: "Provide health-facility birth notice or accepted witness-based proof where applicable."
+  description: "Provide health-facility birth notice or accepted witness-based proof where applicable.",
+  output: "Accepted evidence package prepared and ready for verification.",
 };
 CREATE task:bci_fill_registration_form CONTENT {
   title: "Complete Registration Form",
-  description: "Record names, dates, and parental details exactly before final submission."
+  description: "Record names, dates, and parental details exactly before final submission.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:bci_collect_certificate CONTENT {
   title: "Collect Birth Certificate",
-  description: "Collect the issued certificate extract and verify key details."
+  description: "Collect the issued certificate extract and verify key details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:bci_verify_certificate_details CONTENT {
   title: "Verify Certificate Details",
-  description: "Verify name spelling, date of birth, and registry references."
+  description: "Verify name spelling, date of birth, and registry references.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:bci_request_extra_copies CONTENT {
   title: "Request Additional Certified Copies",
-  description: "Request extra certified copies for passport, school, and service workflows."
+  description: "Request extra certified copies for passport, school, and service workflows.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 RELATE process:birth_certificate_issuance->requires->task:bci_prepare_registry SET sort_order = 1;
@@ -1646,11 +1861,13 @@ RELATE task:bci_collect_certificate->requires->task:bci_request_extra_copies SET
 -- ---------------------------------------------------------------------
 CREATE task:mcr_prepare_documents CONTENT {
   title: "Prepare Marriage Registration Documents",
-  description: "Prepare spouse identity, witness details, and any required supporting records."
+  description: "Prepare spouse identity, witness details, and any required supporting records.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:mcr_spouse_identity CONTENT {
   title: "Spouse Identity Documents",
   description: "Prepare accepted identity documents for both spouses.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1660,34 +1877,44 @@ CREATE task:mcr_spouse_identity CONTENT {
 };
 CREATE task:mcr_witnesses CONTENT {
   title: "Witness Information",
-  description: "Prepare witness names and identity details required by the registrar."
+  description: "Prepare witness names and identity details required by the registrar.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:mcr_register_marriage CONTENT {
   title: "Register Marriage at Civil Office",
   description: "Appear in person, complete civil registration steps, and submit records.",
-  location: "Civil registration marriage desk"
+  output: "Submission receipt or stamped application copy.",
+  location: "Civil registration marriage desk",
+  links: [
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Civil%20registration%20marriage%20desk%2C%20Ethiopia" }
+  ],
 };
 CREATE task:mcr_sign_and_pay CONTENT {
   title: "Sign Forms and Pay Fees",
-  description: "Sign all required forms and pay applicable service fees."
+  description: "Sign all required forms and pay applicable service fees.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 CREATE task:mcr_registry_entry CONTENT {
   title: "Finalize Registry Entry",
-  description: "Confirm the marriage entry is recorded in the civil registry log."
+  description: "Confirm the marriage entry is recorded in the civil registry log.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:mcr_collect_certificate CONTENT {
   title: "Collect Marriage Certificate",
-  description: "Collect certified marriage certificate after registration confirmation."
+  description: "Collect certified marriage certificate after registration confirmation.",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 CREATE task:mcr_verify_details CONTENT {
   title: "Verify Certificate Details",
-  description: "Verify spouse names, dates, and official registry references."
+  description: "Verify spouse names, dates, and official registry references.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:mcr_keep_certified_copies CONTENT {
   title: "Keep Certified Copies",
-  description: "Store certified copies for immigration, residency, and legal-use workflows."
+  description: "Store certified copies for immigration, residency, and legal-use workflows.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 RELATE process:marriage_certificate_registration->requires->task:mcr_prepare_documents SET sort_order = 1;
@@ -1709,11 +1936,13 @@ RELATE task:mcr_collect_certificate->requires->task:mcr_keep_certified_copies SE
 -- ---------------------------------------------------------------------
 CREATE task:pcc_prepare_identity CONTENT {
   title: "Prepare Identity and References",
-  description: "Prepare accepted identity document and any additional reference documents."
+  description: "Prepare accepted identity document and any additional reference documents.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:pcc_identity_document CONTENT {
   title: "Accepted Identity Document",
   description: "Prepare one accepted identification document for police clearance request.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1723,37 +1952,45 @@ CREATE task:pcc_identity_document CONTENT {
 };
 CREATE task:pcc_supporting_reference CONTENT {
   title: "Supporting Reference (If Requested)",
-  description: "Prepare additional supporting records when requested by the clearance office."
+  description: "Prepare additional supporting records when requested by the clearance office.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:pcc_submit_request CONTENT {
   title: "Submit Police Clearance Request",
   description: "Submit request form and complete identity verification/fingerprint capture.",
+  output: "Biometric capture confirmation recorded by the service office.",
   location: "Police clearance service center",
   links: [
-    { label: "Federal Police", url: "https://www.federalpolice.gov.et/" }
+    { label: "Federal Police", url: "https://www.federalpolice.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Police%20clearance%20service%20center%2C%20Ethiopia" }
   ]
 };
 CREATE task:pcc_form_submission CONTENT {
   title: "Submit Application Form",
-  description: "Submit complete form with contact and purpose-of-use details."
+  description: "Submit complete form with contact and purpose-of-use details.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:pcc_fingerprint_or_biometric CONTENT {
   title: "Fingerprint or Biometric Verification",
-  description: "Complete biometric verification where required for certificate issuance."
+  description: "Complete biometric verification where required for certificate issuance.",
+  output: "Biometric capture confirmation recorded by the service office.",
 };
 
 CREATE task:pcc_collect_clearance CONTENT {
   title: "Collect Police Clearance Certificate",
-  description: "Collect issued certificate and verify all identifying details."
+  description: "Collect issued certificate and verify all identifying details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:pcc_verify_clearance CONTENT {
   title: "Verify Certificate Details",
-  description: "Check personal details, issuance date, and reference number."
+  description: "Check personal details, issuance date, and reference number.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:pcc_retain_clearance CONTENT {
   title: "Retain Certificate Copies",
-  description: "Retain copies for employer, visa, and institutional requirements."
+  description: "Retain copies for employer, visa, and institutional requirements.",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 
 RELATE process:police_clearance_certificate->requires->task:pcc_prepare_identity SET sort_order = 1;
@@ -1775,11 +2012,13 @@ RELATE task:pcc_collect_clearance->requires->task:pcc_retain_clearance SET sort_
 -- ---------------------------------------------------------------------
 CREATE task:wpf_prepare_employer_docs CONTENT {
   title: "Prepare Employer Compliance Documents",
-  description: "Prepare employer registration, licensing, and tax compliance documents."
+  description: "Prepare employer registration, licensing, and tax compliance documents.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:wpf_business_compliance CONTENT {
   title: "Business Compliance Bundle",
   description: "Prepare business registration, trade license, and tax records.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Commercial Registration Certificate", process_key: "commercial_registration" },
@@ -1789,12 +2028,14 @@ CREATE task:wpf_business_compliance CONTENT {
 };
 CREATE task:wpf_justification_letter CONTENT {
   title: "Position Justification Letter",
-  description: "Prepare employer letter explaining role, duration, and necessity."
+  description: "Prepare employer letter explaining role, duration, and necessity.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:wpf_prepare_employee_docs CONTENT {
   title: "Prepare Foreign Employee Documents",
   description: "Prepare passport and qualifications plus supporting employment records.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Passport", process_key: "passport" }
@@ -1803,6 +2044,7 @@ CREATE task:wpf_prepare_employee_docs CONTENT {
 CREATE task:wpf_employee_passport CONTENT {
   title: "Employee Passport Copy",
   description: "Prepare valid passport copy for the employee.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Passport", process_key: "passport" }
@@ -1810,28 +2052,34 @@ CREATE task:wpf_employee_passport CONTENT {
 };
 CREATE task:wpf_qualification_records CONTENT {
   title: "Qualification and Experience Records",
-  description: "Prepare education/professional evidence required for permit assessment."
+  description: "Prepare education/professional evidence required for permit assessment.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:wpf_submit_and_decision CONTENT {
   title: "Submit Work Permit and Track Decision",
   description: "Submit application, pay fees, and track official decision.",
+  output: "Official payment receipt (bank slip or digital receipt).",
   location: "Labor authority permit desk or approved digital filing channel",
   links: [
-    { label: "Ministry of Labor and Skills", url: "https://www.mols.gov.et/" }
+    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Labor%20authority%20permit%20desk%20or%20approved%20digital%20filing%20channel%2C%20Ethiopia" }
   ]
 };
 CREATE task:wpf_submit_application CONTENT {
   title: "Submit Permit Application",
-  description: "Submit completed application package with all required attachments."
+  description: "Submit completed application package with all required attachments.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:wpf_pay_and_track CONTENT {
   title: "Pay Fees and Track Status",
-  description: "Pay applicable fees and track updates or correction requests."
+  description: "Pay applicable fees and track updates or correction requests.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 CREATE task:wpf_receive_permit CONTENT {
   title: "Receive Work Permit",
-  description: "Receive issued permit and verify employer, role, and validity details."
+  description: "Receive issued permit and verify employer, role, and validity details.",
+  output: "Verified checklist entry or correction note.",
 };
 
 RELATE process:work_permit_foreign_employee->requires->task:wpf_prepare_employer_docs SET sort_order = 1;
@@ -1854,11 +2102,13 @@ RELATE task:wpf_submit_and_decision->requires->task:wpf_receive_permit SET sort_
 -- ---------------------------------------------------------------------
 CREATE task:enc_prepare_site_documents CONTENT {
   title: "Prepare Site and Identity Documents",
-  description: "Prepare identity and property/tenancy evidence for the connection point."
+  description: "Prepare identity and property/tenancy evidence for the connection point.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:enc_identity_or_tenancy CONTENT {
   title: "Identity and Occupancy Evidence",
   description: "Prepare identity plus occupancy evidence accepted for connection requests.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1867,37 +2117,45 @@ CREATE task:enc_identity_or_tenancy CONTENT {
 };
 CREATE task:enc_connection_point_details CONTENT {
   title: "Connection Point Details",
-  description: "Prepare address, nearest pole/reference point, and wiring readiness details."
+  description: "Prepare address, nearest pole/reference point, and wiring readiness details.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:enc_submit_connection_request CONTENT {
   title: "Submit New Connection Request",
   description: "Submit connection request and complete site survey/quotation steps.",
+  output: "Inspection or site-visit report reference.",
   location: "EEU customer service office or approved digital channel",
   links: [
-    { label: "Ethiopian Electric Utility", url: "https://www.eeu.gov.et/" }
+    { label: "Ethiopian Electric Utility", url: "https://www.eeu.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=EEU%20customer%20service%20office%20or%20approved%20digital%20channel%2C%20Ethiopia" }
   ]
 };
 CREATE task:enc_site_survey CONTENT {
   title: "Site Survey",
-  description: "Complete utility site survey and technical feasibility assessment."
+  description: "Complete utility site survey and technical feasibility assessment.",
+  output: "Inspection or site-visit report reference.",
 };
 CREATE task:enc_quote_and_fee CONTENT {
   title: "Quotation and Fee Payment",
-  description: "Accept connection quotation and pay required connection fees."
+  description: "Accept connection quotation and pay required connection fees.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:enc_install_and_activate CONTENT {
   title: "Install Meter and Activate Service",
-  description: "Complete meter installation and activate the customer account."
+  description: "Complete meter installation and activate the customer account.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:enc_meter_installation CONTENT {
   title: "Meter Installation",
-  description: "Ensure meter is installed and sealed according to utility standards."
+  description: "Ensure meter is installed and sealed according to utility standards.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:enc_account_activation CONTENT {
   title: "Account Activation",
-  description: "Activate billing account and confirm service availability."
+  description: "Activate billing account and confirm service availability.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 RELATE process:electricity_new_connection->requires->task:enc_prepare_site_documents SET sort_order = 1;
@@ -1919,11 +2177,13 @@ RELATE task:enc_install_and_activate->requires->task:enc_account_activation SET 
 -- ---------------------------------------------------------------------
 CREATE task:dc_confirm_event_details CONTENT {
   title: "Confirm Death Event Details",
-  description: "Prepare death event information and required family/identity references."
+  description: "Prepare death event information and required family/identity references.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:dc_collect_medical_or_witness CONTENT {
   title: "Medical Notice or Witness Statement",
   description: "Prepare medical death notice where available or accepted witness statement.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Hospital Death Notice", process_key: "medical_death_notice" },
@@ -1933,6 +2193,7 @@ CREATE task:dc_collect_medical_or_witness CONTENT {
 CREATE task:dc_collect_family_identification CONTENT {
   title: "Family/Reporter Identification",
   description: "Prepare identification for person reporting the death event.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -1944,31 +2205,38 @@ CREATE task:dc_collect_family_identification CONTENT {
 CREATE task:dc_submit_registry_request CONTENT {
   title: "Submit Civil Registry Request",
   description: "Submit death registration request and supporting documents at civil registry.",
+  output: "Submission receipt or stamped application copy.",
   location: "Civil registration office serving place of death/residence",
   links: [
-    { label: "Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" }
+    { label: "Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Civil%20registration%20office%20serving%20place%20of%20death%2Fresidence%2C%20Ethiopia" }
   ]
 };
 CREATE task:dc_fill_death_form CONTENT {
   title: "Complete Death Registration Form",
-  description: "Complete death registration form with accurate personal and event details."
+  description: "Complete death registration form with accurate personal and event details.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:dc_submit_supporting_documents CONTENT {
   title: "Submit Supporting Documents",
-  description: "Submit identity, event evidence, and any additional required records."
+  description: "Submit identity, event evidence, and any additional required records.",
+  output: "Submission receipt or stamped application copy.",
 };
 
 CREATE task:dc_collect_certificate CONTENT {
   title: "Collect Death Certificate",
-  description: "Collect certified extract and verify registry details."
+  description: "Collect certified extract and verify registry details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:dc_verify_record_extract CONTENT {
   title: "Verify Certificate Details",
-  description: "Check names, dates, and location details before leaving service desk."
+  description: "Check names, dates, and location details before leaving service desk.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:dc_request_additional_copies CONTENT {
   title: "Request Additional Copies",
-  description: "Request extra certified copies for inheritance, pension, and legal use."
+  description: "Request extra certified copies for inheritance, pension, and legal use.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 RELATE process:death_certificate_issuance->requires->task:dc_confirm_event_details SET sort_order = 1;
@@ -1990,11 +2258,13 @@ RELATE task:dc_collect_certificate->requires->task:dc_request_additional_copies 
 -- ---------------------------------------------------------------------
 CREATE task:dcr_prepare_case_documents CONTENT {
   title: "Prepare Divorce Case Documents",
-  description: "Prepare civil records and identity documents needed for divorce registration."
+  description: "Prepare civil records and identity documents needed for divorce registration.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:dcr_marriage_record CONTENT {
   title: "Marriage Record",
   description: "Prepare marriage certificate/registry reference used to register divorce.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Marriage Certificate", process_key: "marriage_certificate_registration" }
@@ -2003,6 +2273,7 @@ CREATE task:dcr_marriage_record CONTENT {
 CREATE task:dcr_identity_documents CONTENT {
   title: "Spouse Identification Documents",
   description: "Prepare accepted identification for each spouse/requesting party.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2014,31 +2285,38 @@ CREATE task:dcr_identity_documents CONTENT {
 CREATE task:dcr_file_divorce_record CONTENT {
   title: "File Divorce Registration",
   description: "Submit divorce evidence and complete registry entry procedures.",
+  output: "Submission receipt or stamped application copy.",
   location: "Civil registration office where divorce is registered",
   links: [
-    { label: "Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" }
+    { label: "Civil Registration Services", url: "https://www.aacrrsa.gov.et/directorates/services/detail/7" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Civil%20registration%20office%20where%20divorce%20is%20registered%2C%20Ethiopia" }
   ]
 };
 CREATE task:dcr_submit_court_or_mutual_documents CONTENT {
   title: "Submit Court/Mutual Separation Evidence",
-  description: "Submit finalized court judgment or accepted dissolution evidence."
+  description: "Submit finalized court judgment or accepted dissolution evidence.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:dcr_register_registry_entry CONTENT {
   title: "Register Civil Status Update",
-  description: "Confirm divorce status is entered in the civil registry."
+  description: "Confirm divorce status is entered in the civil registry.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:dcr_collect_certificate CONTENT {
   title: "Collect Divorce Certificate",
-  description: "Collect certified divorce record after registration is completed."
+  description: "Collect certified divorce record after registration is completed.",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 CREATE task:dcr_verify_certificate CONTENT {
   title: "Verify Certificate Details",
-  description: "Verify names, dates, and case references on issued certificate."
+  description: "Verify names, dates, and case references on issued certificate.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:dcr_request_certified_copies CONTENT {
   title: "Request Certified Copies",
-  description: "Request additional certified copies for legal and administrative use."
+  description: "Request additional certified copies for legal and administrative use.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 RELATE process:divorce_certificate_registration->requires->task:dcr_prepare_case_documents SET sort_order = 1;
@@ -2060,11 +2338,13 @@ RELATE task:dcr_collect_certificate->requires->task:dcr_request_certified_copies
 -- ---------------------------------------------------------------------
 CREATE task:bnr_prepare_identity_and_activity CONTENT {
   title: "Prepare Applicant and Activity Details",
-  description: "Prepare identity documents and intended business activity details."
+  description: "Prepare identity documents and intended business activity details.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:bnr_applicant_identity CONTENT {
   title: "Applicant Identity",
   description: "Prepare accepted identity document for name reservation request.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Fayda ID / FIN", process_key: "fayda_registration" },
@@ -2074,37 +2354,45 @@ CREATE task:bnr_applicant_identity CONTENT {
 };
 CREATE task:bnr_define_name_and_activity CONTENT {
   title: "Define Name and Activity",
-  description: "Prepare preferred names and business activity category before submission."
+  description: "Prepare preferred names and business activity category before submission.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:bnr_submit_name_reservation CONTENT {
   title: "Submit Name Reservation Request",
   description: "Search availability and submit reservation application.",
+  output: "Submission receipt or stamped application copy.",
   location: "eTrade portal or trade office support desk",
   links: [
-    { label: "eTrade Portal", url: "https://etrade.gov.et" }
+    { label: "eTrade Portal", url: "https://etrade.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=eTrade%20portal%20or%20trade%20office%20support%20desk%2C%20Ethiopia" }
   ]
 };
 CREATE task:bnr_search_name_availability CONTENT {
   title: "Search Name Availability",
-  description: "Search preferred names and choose available option."
+  description: "Search preferred names and choose available option.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:bnr_pay_name_reservation_fee CONTENT {
   title: "Pay Reservation Fee",
-  description: "Pay reservation fee and keep transaction reference."
+  description: "Pay reservation fee and keep transaction reference.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:bnr_receive_approval CONTENT {
   title: "Receive Reservation Confirmation",
-  description: "Receive approval and keep reservation validity timeline."
+  description: "Receive approval and keep reservation validity timeline.",
+  output: "Issued document/card/certificate and collection acknowledgment.",
 };
 CREATE task:bnr_download_reservation_letter CONTENT {
   title: "Download Reservation Letter",
-  description: "Download/collect reservation confirmation for registration file."
+  description: "Download/collect reservation confirmation for registration file.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:bnr_use_before_expiry CONTENT {
   title: "Use Reservation Before Expiry",
   description: "Proceed to commercial registration before reservation expires.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Commercial Registration", process_key: "commercial_registration" }
@@ -2130,15 +2418,18 @@ RELATE task:bnr_receive_approval->requires->task:bnr_use_before_expiry SET sort_
 -- ---------------------------------------------------------------------
 CREATE task:vat_confirm_eligibility CONTENT {
   title: "Confirm VAT Registration Eligibility",
-  description: "Confirm VAT threshold/mandatory conditions before filing."
+  description: "Confirm VAT threshold/mandatory conditions before filing.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:vat_check_turnover_threshold CONTENT {
   title: "Check Turnover and Mandatory Criteria",
-  description: "Confirm whether threshold or activity type requires VAT registration."
+  description: "Confirm whether threshold or activity type requires VAT registration.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:vat_prepare_business_identifiers CONTENT {
   title: "Prepare TIN and Business Documents",
   description: "Prepare taxpayer and business identification records.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "TIN", process_key: "tin_registration" },
@@ -2149,32 +2440,39 @@ CREATE task:vat_prepare_business_identifiers CONTENT {
 CREATE task:vat_submit_registration CONTENT {
   title: "Submit VAT Registration",
   description: "Submit VAT registration form with supporting business records.",
+  output: "Submission receipt or stamped application copy.",
   location: "Ministry of Revenues office or online filing channel",
   links: [
     { label: "Ministry of Revenues", url: "https://www.mor.gov.et/web/mor/mor" },
-    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" }
+    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Ministry%20of%20Revenues%20office%20or%20online%20filing%20channel%2C%20Ethiopia" }
   ]
 };
 CREATE task:vat_complete_vat_form CONTENT {
   title: "Complete VAT Form",
-  description: "Fill VAT registration form with business and contact details."
+  description: "Fill VAT registration form with business and contact details.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:vat_attach_supporting_documents CONTENT {
   title: "Attach Supporting Documents",
-  description: "Attach required registration, licensing, and taxpayer documents."
+  description: "Attach required registration, licensing, and taxpayer documents.",
+  output: "Accepted evidence package prepared and ready for verification.",
 };
 
 CREATE task:vat_activate_vat_compliance CONTENT {
   title: "Activate VAT Compliance",
-  description: "Receive confirmation and start periodic VAT filing obligations."
+  description: "Receive confirmation and start periodic VAT filing obligations.",
+  output: "Issued document/card/certificate and collection acknowledgment.",
 };
 CREATE task:vat_get_vat_certificate CONTENT {
   title: "Receive VAT Confirmation",
-  description: "Collect VAT registration certificate/confirmation details."
+  description: "Collect VAT registration certificate/confirmation details.",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 CREATE task:vat_set_filing_calendar CONTENT {
   title: "Set Filing and Record Calendar",
-  description: "Set internal filing deadlines and bookkeeping controls for VAT returns."
+  description: "Set internal filing deadlines and bookkeeping controls for VAT returns.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 RELATE process:vat_registration->requires->task:vat_confirm_eligibility SET sort_order = 1;
@@ -2196,11 +2494,13 @@ RELATE task:vat_activate_vat_compliance->requires->task:vat_set_filing_calendar 
 -- ---------------------------------------------------------------------
 CREATE task:iec_prepare_prerequisites CONTENT {
   title: "Prepare Trade and Tax Prerequisites",
-  description: "Complete registration, licensing, and tax prerequisites before applying."
+  description: "Complete registration, licensing, and tax prerequisites before applying.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:iec_commercial_and_trade_docs CONTENT {
   title: "Commercial Registration and Trade License",
   description: "Prepare core business legality documents.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Commercial Registration", process_key: "commercial_registration" },
@@ -2210,6 +2510,7 @@ CREATE task:iec_commercial_and_trade_docs CONTENT {
 CREATE task:iec_tax_identification CONTENT {
   title: "Tax Registration Evidence",
   description: "Prepare tax registration identifiers used for code issuance.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "TIN", process_key: "tin_registration" }
@@ -2219,32 +2520,39 @@ CREATE task:iec_tax_identification CONTENT {
 CREATE task:iec_submit_application CONTENT {
   title: "Submit Importer/Exporter Application",
   description: "Submit application and pay service fees through approved channel.",
+  output: "Official payment receipt (bank slip or digital receipt).",
   location: "Trade/revenue service office or approved online portal",
   links: [
     { label: "eTrade Portal", url: "https://etrade.gov.et" },
-    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" }
+    { label: "Ethiopian Business Portal", url: "https://www.new.business.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Trade%2Frevenue%20service%20office%20or%20approved%20online%20portal%2C%20Ethiopia" }
   ]
 };
 CREATE task:iec_fill_import_export_form CONTENT {
   title: "Complete Application Form",
-  description: "Fill importer/exporter registration form with business details."
+  description: "Fill importer/exporter registration form with business details.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:iec_pay_service_fees CONTENT {
   title: "Pay Service Fees",
-  description: "Pay registration/service fees and keep official receipt."
+  description: "Pay registration/service fees and keep official receipt.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:iec_receive_code CONTENT {
   title: "Receive Importer/Exporter Code",
-  description: "Receive issued code and verify company details."
+  description: "Receive issued code and verify company details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:iec_collect_certificate_or_code CONTENT {
   title: "Collect Registration Output",
-  description: "Collect code/certificate from portal or service desk."
+  description: "Collect code/certificate from portal or service desk.",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 CREATE task:iec_link_with_bank_and_customs CONTENT {
   title: "Link Code in Operations",
-  description: "Use issued code in customs declarations and trade banking operations."
+  description: "Use issued code in customs declarations and trade banking operations.",
+  output: "Issued document/card/certificate and collection acknowledgment.",
 };
 
 RELATE process:import_export_code_registration->requires->task:iec_prepare_prerequisites SET sort_order = 1;
@@ -2266,11 +2574,13 @@ RELATE task:iec_receive_code->requires->task:iec_link_with_bank_and_customs SET 
 -- ---------------------------------------------------------------------
 CREATE task:bcp_prepare_land_and_design_documents CONTENT {
   title: "Prepare Land and Design Documents",
-  description: "Prepare land-right and building design documents for permit filing."
+  description: "Prepare land-right and building design documents for permit filing.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:bcp_proof_of_plot_or_lease CONTENT {
   title: "Land Plot / Lease Evidence",
   description: "Prepare accepted land ownership/lease and site evidence.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Land Holding Certificate", process_key: "land_holding_certificate_issuance" }
@@ -2278,37 +2588,45 @@ CREATE task:bcp_proof_of_plot_or_lease CONTENT {
 };
 CREATE task:bcp_architectural_drawings CONTENT {
   title: "Architectural and Structural Drawings",
-  description: "Prepare plan set required for technical review."
+  description: "Prepare plan set required for technical review.",
+  output: "Verified checklist entry or correction note.",
 };
 
 CREATE task:bcp_submit_permit_application CONTENT {
   title: "Submit Construction Permit Application",
   description: "Submit permit package and address technical review comments.",
+  output: "Verified checklist entry or correction note.",
   location: "City/regional construction permit authority",
   links: [
-    { label: "Addis Permit and Control", url: "https://www.aacpco.gov.et/" }
+    { label: "Addis Cadastre and Permit", url: "https://addiscadaster.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=City%2Fregional%20construction%20permit%20authority%2C%20Ethiopia" }
   ]
 };
 CREATE task:bcp_file_application_package CONTENT {
   title: "File Permit Package",
-  description: "Submit complete package, references, and contact information."
+  description: "Submit complete package, references, and contact information.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:bcp_technical_review_and_corrections CONTENT {
   title: "Technical Review and Corrections",
-  description: "Address plan corrections requested during technical review."
+  description: "Address plan corrections requested during technical review.",
+  output: "Verified checklist entry or correction note.",
 };
 
 CREATE task:bcp_receive_permit_and_inspection_plan CONTENT {
   title: "Receive Permit and Inspection Path",
-  description: "Collect permit and comply with staged inspection checkpoints."
+  description: "Collect permit and comply with staged inspection checkpoints.",
+  output: "Inspection or site-visit report reference.",
 };
 CREATE task:bcp_collect_permit_document CONTENT {
   title: "Collect Permit Document",
-  description: "Collect approved permit and verify conditions/validity period."
+  description: "Collect approved permit and verify conditions/validity period.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:bcp_schedule_stage_inspections CONTENT {
   title: "Schedule Stage Inspections",
-  description: "Schedule required inspections for foundation, structure, and completion."
+  description: "Schedule required inspections for foundation, structure, and completion.",
+  output: "Appointment confirmation with date, time, and reference number.",
 };
 
 RELATE process:building_construction_permit->requires->task:bcp_prepare_land_and_design_documents SET sort_order = 1;
@@ -2330,11 +2648,13 @@ RELATE task:bcp_receive_permit_and_inspection_plan->requires->task:bcp_schedule_
 -- ---------------------------------------------------------------------
 CREATE task:wnc_prepare_site_documents CONTENT {
   title: "Prepare Site and Customer Documents",
-  description: "Prepare identity and occupancy records for the connection site."
+  description: "Prepare identity and occupancy records for the connection site.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:wnc_identity_or_tenancy CONTENT {
   title: "Identity and Occupancy Evidence",
   description: "Prepare accepted identity and tenancy/ownership evidence.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2343,37 +2663,45 @@ CREATE task:wnc_identity_or_tenancy CONTENT {
 };
 CREATE task:wnc_connection_point_information CONTENT {
   title: "Connection Point Information",
-  description: "Prepare full address and site access details for utility survey."
+  description: "Prepare full address and site access details for utility survey.",
+  output: "Inspection or site-visit report reference.",
 };
 
 CREATE task:wnc_submit_connection_request CONTENT {
   title: "Submit Water Connection Request",
   description: "Submit application and complete utility review steps.",
+  output: "Verified checklist entry or correction note.",
   location: "Water utility customer service office or approved digital channel",
   links: [
-    { label: "Addis Ababa Water and Sewerage Authority", url: "https://www.aawsa.gov.et/" }
+    { label: "Addis Ababa Water and Sewerage Authority", url: "https://www.aawsa.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Water%20utility%20customer%20service%20office%20or%20approved%20digital%20channel%2C%20Ethiopia" }
   ]
 };
 CREATE task:wnc_site_survey CONTENT {
   title: "Site Survey",
-  description: "Complete technical survey and feasibility review."
+  description: "Complete technical survey and feasibility review.",
+  output: "Inspection or site-visit report reference.",
 };
 CREATE task:wnc_quote_and_fee CONTENT {
   title: "Quotation and Fee Settlement",
-  description: "Approve quotation and pay required connection charges."
+  description: "Approve quotation and pay required connection charges.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:wnc_install_and_activate CONTENT {
   title: "Install Meter and Activate Account",
-  description: "Complete meter installation and activate utility account."
+  description: "Complete meter installation and activate utility account.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:wnc_meter_installation CONTENT {
   title: "Meter Installation",
-  description: "Confirm meter installation and sealing by utility team."
+  description: "Confirm meter installation and sealing by utility team.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:wnc_service_activation CONTENT {
   title: "Service Activation",
-  description: "Confirm account activation and initial billing setup."
+  description: "Confirm account activation and initial billing setup.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 RELATE process:water_new_connection->requires->task:wnc_prepare_site_documents SET sort_order = 1;
@@ -2395,11 +2723,13 @@ RELATE task:wnc_install_and_activate->requires->task:wnc_service_activation SET 
 -- ---------------------------------------------------------------------
 CREATE task:vot_prepare_transfer_documents CONTENT {
   title: "Prepare Ownership Transfer Documents",
-  description: "Prepare seller/buyer IDs and vehicle transfer evidence."
+  description: "Prepare seller/buyer IDs and vehicle transfer evidence.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:vot_identity_and_license CONTENT {
   title: "Identity and License Documents",
   description: "Prepare accepted identity and driving credentials for parties.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2409,37 +2739,45 @@ CREATE task:vot_identity_and_license CONTENT {
 };
 CREATE task:vot_sale_agreement_and_vehicle_docs CONTENT {
   title: "Sale Agreement and Vehicle File",
-  description: "Prepare sale agreement, existing ownership book, and vehicle documents."
+  description: "Prepare sale agreement, existing ownership book, and vehicle documents.",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:vot_submit_transfer_request CONTENT {
   title: "Submit Transfer Request",
   description: "Submit transfer request, complete inspection/clearance, and pay fees.",
+  output: "Official payment receipt (bank slip or digital receipt).",
   location: "Driver and Vehicle License Control Authority branch",
   links: [
-    { label: "DVLCA", url: "https://www.dvlca.gov.et/" }
+    { label: "DVLCA", url: "https://www.dvlca.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Driver%20and%20Vehicle%20License%20Control%20Authority%20branch%2C%20Ethiopia" }
   ]
 };
 CREATE task:vot_vehicle_inspection_and_clearance CONTENT {
   title: "Vehicle Inspection and Clearance",
-  description: "Complete required vehicle inspection and clearance checks."
+  description: "Complete required vehicle inspection and clearance checks.",
+  output: "Inspection or site-visit report reference.",
 };
 CREATE task:vot_pay_transfer_fees_and_stamp CONTENT {
   title: "Pay Transfer Fees",
-  description: "Pay transfer and stamping fees and keep official receipt."
+  description: "Pay transfer and stamping fees and keep official receipt.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 CREATE task:vot_receive_updated_ownership CONTENT {
   title: "Receive Updated Ownership Record",
-  description: "Collect updated ownership document and validate all details."
+  description: "Collect updated ownership document and validate all details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:vot_collect_updated_book_or_card CONTENT {
   title: "Collect Updated Book/Card",
-  description: "Collect new ownership book/card in buyer's name."
+  description: "Collect new ownership book/card in buyer's name.",
+  output: "Appointment confirmation with date, time, and reference number.",
 };
 CREATE task:vot_update_insurance_and_records CONTENT {
   title: "Update Insurance and Related Records",
-  description: "Update insurance, inspection, and related records after transfer."
+  description: "Update insurance, inspection, and related records after transfer.",
+  output: "Inspection or site-visit report reference.",
 };
 
 RELATE process:vehicle_ownership_transfer->requires->task:vot_prepare_transfer_documents SET sort_order = 1;
@@ -2460,11 +2798,13 @@ RELATE task:vot_receive_updated_ownership->requires->task:vot_update_insurance_a
 -- ---------------------------------------------------------------------
 CREATE task:lhc_prepare_core_documents CONTENT {
   title: "Prepare Core Land and Identity Documents",
-  description: "Prepare applicant identity and legal basis documents for land holding certificate issuance."
+  description: "Prepare applicant identity and legal basis documents for land holding certificate issuance.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:lhc_identity_and_residency_docs CONTENT {
   title: "Identity and Residency Documents",
   description: "Prepare accepted identity and residency documents for applicant verification.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2474,24 +2814,29 @@ CREATE task:lhc_identity_and_residency_docs CONTENT {
 };
 CREATE task:lhc_acquisition_basis_docs CONTENT {
   title: "Land Acquisition Basis Documents",
-  description: "Prepare legal basis for holding claim (lease allocation, transfer contract, or decision records)."
+  description: "Prepare legal basis for holding claim (lease allocation, transfer contract, or decision records).",
+  output: "Prepared document package ready for the next submission step.",
 };
 
 CREATE task:lhc_submit_land_record_request CONTENT {
   title: "Submit Land Record Request",
   description: "Open application file and complete parcel record verification steps.",
+  output: "Submission receipt or stamped application copy.",
   location: "Land administration and information service office",
   links: [
-    { label: "Addis Ababa City Administration", url: "https://www.aaca.gov.et/" }
+    { label: "Addis Ababa Land Bureau", url: "https://www.aalb.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Land%20administration%20and%20information%20service%20office%2C%20Ethiopia" }
   ]
 };
 CREATE task:lhc_open_application_file CONTENT {
   title: "Open Application File",
-  description: "File issuance request with parcel references and applicant details."
+  description: "File issuance request with parcel references and applicant details.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:lhc_parcel_record_verification CONTENT {
   title: "Parcel and Boundary Verification",
   description: "Verify parcel information using survey/cadastre references.",
+  output: "Inspection or site-visit report reference.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Cadastral Map and Boundary Certificate", process_key: "cadastral_map_and_boundary_certificate" }
@@ -2500,15 +2845,18 @@ CREATE task:lhc_parcel_record_verification CONTENT {
 
 CREATE task:lhc_receive_certificate CONTENT {
   title: "Receive Land Holding Certificate",
-  description: "Pay service fees and collect issued certificate/registry extract."
+  description: "Pay service fees and collect issued certificate/registry extract.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 CREATE task:lhc_pay_certificate_fees CONTENT {
   title: "Pay Certificate Fees",
-  description: "Pay official service fees and keep receipt in your property file."
+  description: "Pay official service fees and keep receipt in your property file.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 CREATE task:lhc_collect_and_verify_certificate CONTENT {
   title: "Collect and Verify Certificate",
-  description: "Collect certificate and verify owner name, parcel, and reference details."
+  description: "Collect certificate and verify owner name, parcel, and reference details.",
+  output: "Verified checklist entry or correction note.",
 };
 
 RELATE process:land_holding_certificate_issuance->requires->task:lhc_prepare_core_documents SET sort_order = 1;
@@ -2529,11 +2877,13 @@ RELATE task:lhc_receive_certificate->requires->task:lhc_collect_and_verify_certi
 -- ---------------------------------------------------------------------
 CREATE task:llt_prepare_transfer_pack CONTENT {
   title: "Prepare Transfer Document Pack",
-  description: "Prepare seller/buyer identity records and existing land holding evidence."
+  description: "Prepare seller/buyer identity records and existing land holding evidence.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:llt_transferor_and_transferee_ids CONTENT {
   title: "Transferor and Transferee IDs",
   description: "Prepare accepted identification for both parties.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2544,6 +2894,7 @@ CREATE task:llt_transferor_and_transferee_ids CONTENT {
 CREATE task:llt_existing_land_holding_record CONTENT {
   title: "Existing Land Holding Record",
   description: "Prepare valid current land holding certificate and parcel references.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Land Holding Certificate", process_key: "land_holding_certificate_issuance" }
@@ -2552,11 +2903,13 @@ CREATE task:llt_existing_land_holding_record CONTENT {
 
 CREATE task:llt_clear_compliance_and_taxes CONTENT {
   title: "Clear Compliance and Taxes",
-  description: "Clear tax/dues and confirm transfer compliance before filing."
+  description: "Clear tax/dues and confirm transfer compliance before filing.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 CREATE task:llt_tax_clearance CONTENT {
   title: "Tax Clearance",
   description: "Obtain or confirm tax clearance where required for transfer filing.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "TIN", process_key: "tin_registration" }
@@ -2564,24 +2917,29 @@ CREATE task:llt_tax_clearance CONTENT {
 };
 CREATE task:llt_municipal_dues_clearance CONTENT {
   title: "Municipal Dues Clearance",
-  description: "Clear municipal obligations linked to the parcel/property."
+  description: "Clear municipal obligations linked to the parcel/property.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:llt_submit_transfer_and_register CONTENT {
   title: "Submit Transfer and Register",
   description: "Submit transfer package and receive updated holding record.",
+  output: "Submission receipt or stamped application copy.",
   location: "Land transfer and registry desk",
   links: [
-    { label: "Addis Ababa City Administration", url: "https://www.aaca.gov.et/" }
+    { label: "Addis Ababa Land Bureau", url: "https://www.aalb.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Land%20transfer%20and%20registry%20desk%2C%20Ethiopia" }
   ]
 };
 CREATE task:llt_file_transfer_application CONTENT {
   title: "File Transfer Application",
-  description: "Submit signed transfer package and complete registry checks."
+  description: "Submit signed transfer package and complete registry checks.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:llt_receive_updated_lease_record CONTENT {
   title: "Receive Updated Lease/Holding Record",
-  description: "Collect updated holder record and verify parcel and holder details."
+  description: "Collect updated holder record and verify parcel and holder details.",
+  output: "Verified checklist entry or correction note.",
 };
 
 RELATE process:land_lease_transfer->requires->task:llt_prepare_transfer_pack SET sort_order = 1;
@@ -2602,11 +2960,13 @@ RELATE task:llt_submit_transfer_and_register->requires->task:llt_receive_updated
 -- ---------------------------------------------------------------------
 CREATE task:cmb_prepare_site_information CONTENT {
   title: "Prepare Site and Applicant Information",
-  description: "Prepare parcel references and applicant identity records for cadastre request."
+  description: "Prepare parcel references and applicant identity records for cadastre request.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:cmb_parcel_reference_details CONTENT {
   title: "Parcel Reference Details",
   description: "Prepare parcel references and existing records used by survey team.",
+  output: "Inspection or site-visit report reference.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Land Holding Certificate", process_key: "land_holding_certificate_issuance" }
@@ -2615,6 +2975,7 @@ CREATE task:cmb_parcel_reference_details CONTENT {
 CREATE task:cmb_identity_docs CONTENT {
   title: "Applicant Identity Documents",
   description: "Prepare accepted identity documentation for the request.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2626,31 +2987,38 @@ CREATE task:cmb_identity_docs CONTENT {
 CREATE task:cmb_request_survey_and_mapping CONTENT {
   title: "Request Survey and Mapping",
   description: "Submit request, complete field survey, and boundary witness confirmations.",
+  output: "Inspection or site-visit report reference.",
   location: "Land survey/cadastre service office",
   links: [
-    { label: "Addis Ababa City Administration", url: "https://www.aaca.gov.et/" }
+    { label: "Addis Ababa Land Bureau", url: "https://www.aalb.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Land%20survey%2Fcadastre%20service%20office%2C%20Ethiopia" }
   ]
 };
 CREATE task:cmb_schedule_field_survey CONTENT {
   title: "Schedule Field Survey",
-  description: "Coordinate site visit timeline for cadastral survey team."
+  description: "Coordinate site visit timeline for cadastral survey team.",
+  output: "Inspection or site-visit report reference.",
 };
 CREATE task:cmb_boundary_witness_confirmation CONTENT {
   title: "Boundary Witness Confirmation",
-  description: "Complete boundary witness confirmation where required."
+  description: "Complete boundary witness confirmation where required.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:cmb_collect_cadastral_output CONTENT {
   title: "Collect Cadastral Output",
-  description: "Collect certified map and verify coordinates/boundary details."
+  description: "Collect certified map and verify coordinates/boundary details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:cmb_review_map_coordinates CONTENT {
   title: "Review Map Coordinates",
-  description: "Check coordinates, parcel identifiers, and boundary references."
+  description: "Check coordinates, parcel identifiers, and boundary references.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:cmb_collect_certified_map CONTENT {
   title: "Collect Certified Cadastral Map",
-  description: "Collect final certified map output for use in related processes."
+  description: "Collect final certified map output for use in related processes.",
+  output: "Issued document/card/certificate and collection acknowledgment.",
 };
 
 RELATE process:cadastral_map_and_boundary_certificate->requires->task:cmb_prepare_site_information SET sort_order = 1;
@@ -2671,11 +3039,13 @@ RELATE task:cmb_collect_cadastral_output->requires->task:cmb_collect_certified_m
 -- ---------------------------------------------------------------------
 CREATE task:pmr_prepare_loan_and_property_documents CONTENT {
   title: "Prepare Loan and Property Documents",
-  description: "Prepare property records and lender/borrower documents for mortgage registration."
+  description: "Prepare property records and lender/borrower documents for mortgage registration.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:pmr_property_title_or_holding_record CONTENT {
   title: "Property Title/Holding Record",
   description: "Prepare valid property/land record used for mortgage registration.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "all_of",
   required_documents: [
     { name: "Land Holding Certificate", process_key: "land_holding_certificate_issuance" }
@@ -2684,6 +3054,7 @@ CREATE task:pmr_property_title_or_holding_record CONTENT {
 CREATE task:pmr_lender_and_borrower_documents CONTENT {
   title: "Lender and Borrower Identification",
   description: "Prepare accepted identification for lender/borrower parties.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2695,31 +3066,38 @@ CREATE task:pmr_lender_and_borrower_documents CONTENT {
 CREATE task:pmr_file_encumbrance_registration CONTENT {
   title: "File Encumbrance Registration",
   description: "Submit mortgage deed and complete registry/legal review checks.",
+  output: "Verified checklist entry or correction note.",
   location: "Land registry encumbrance service desk",
   links: [
-    { label: "Addis Ababa City Administration", url: "https://www.aaca.gov.et/" }
+    { label: "Addis Ababa Land Bureau", url: "https://www.aalb.gov.et" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Land%20registry%20encumbrance%20service%20desk%2C%20Ethiopia" }
   ]
 };
 CREATE task:pmr_submit_mortgage_deed CONTENT {
   title: "Submit Mortgage Deed",
-  description: "Submit signed mortgage deed and supporting legal file."
+  description: "Submit signed mortgage deed and supporting legal file.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:pmr_registry_review_and_stamp CONTENT {
   title: "Registry Review and Stamping",
-  description: "Complete review, stamping, and registry entry procedures."
+  description: "Complete review, stamping, and registry entry procedures.",
+  output: "Verified checklist entry or correction note.",
 };
 
 CREATE task:pmr_collect_registration_output CONTENT {
   title: "Collect Registration Output",
-  description: "Collect encumbrance confirmation and update related records."
+  description: "Collect encumbrance confirmation and update related records.",
+  output: "Issued document/card/certificate and collection acknowledgment.",
 };
 CREATE task:pmr_collect_encumbrance_certificate CONTENT {
   title: "Collect Encumbrance Confirmation",
-  description: "Collect registered mortgage confirmation/certificate details."
+  description: "Collect registered mortgage confirmation/certificate details.",
+  output: "Issued certificate, certified extract, or official registry printout.",
 };
 CREATE task:pmr_update_related_records CONTENT {
   title: "Update Related Property Records",
-  description: "Update bank, insurance, and internal property records after registration."
+  description: "Update bank, insurance, and internal property records after registration.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 
 RELATE process:property_mortgage_registration->requires->task:pmr_prepare_loan_and_property_documents SET sort_order = 1;
@@ -2740,11 +3118,13 @@ RELATE task:pmr_collect_registration_output->requires->task:pmr_update_related_r
 -- ---------------------------------------------------------------------
 CREATE task:mdn_prepare_request_context CONTENT {
   title: "Prepare Request Context",
-  description: "Prepare requester identity and death-event context required by the health facility."
+  description: "Prepare requester identity and death-event context required by the health facility.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:mdn_requester_identity CONTENT {
   title: "Requester Identification",
   description: "Prepare accepted identification for requester/family representative.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2754,37 +3134,45 @@ CREATE task:mdn_requester_identity CONTENT {
 };
 CREATE task:mdn_case_information CONTENT {
   title: "Death Case Information",
-  description: "Prepare case details used by facility to verify and issue notice."
+  description: "Prepare case details used by facility to verify and issue notice.",
+  output: "Verified checklist entry or correction note.",
 };
 
 CREATE task:mdn_submit_facility_request CONTENT {
   title: "Submit Health Facility Request",
   description: "Submit notice request and complete verification steps at issuing facility.",
+  output: "Submission receipt or stamped application copy.",
   location: "Hospital or health facility records desk",
   links: [
-    { label: "Ministry of Health", url: "https://www.moh.gov.et/" }
+    { label: "Ministry of Health", url: "https://www.moh.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Hospital%20or%20health%20facility%20records%20desk%2C%20Ethiopia" }
   ]
 };
 CREATE task:mdn_file_notice_request CONTENT {
   title: "File Notice Request",
-  description: "Submit request with required records to the facility records unit."
+  description: "Submit request with required records to the facility records unit.",
+  output: "Submission receipt or stamped application copy.",
 };
 CREATE task:mdn_complete_clinical_verification CONTENT {
   title: "Clinical/Registry Verification",
-  description: "Complete verification process required by the facility prior to issuance."
+  description: "Complete verification process required by the facility prior to issuance.",
+  output: "Task completion acknowledgment (receipt, stamp, ticket, or reference).",
 };
 
 CREATE task:mdn_collect_notice CONTENT {
   title: "Collect Medical Death Notice",
-  description: "Collect signed notice and verify names, dates, and facility details."
+  description: "Collect signed notice and verify names, dates, and facility details.",
+  output: "Verified checklist entry or correction note.",
 };
 CREATE task:mdn_receive_signed_notice CONTENT {
   title: "Receive Signed Notice",
-  description: "Collect issued notice with official signature/stamp."
+  description: "Collect issued notice with official signature/stamp.",
+  output: "Issued document/card/certificate and collection acknowledgment.",
 };
 CREATE task:mdn_verify_notice_details CONTENT {
   title: "Verify Notice Details",
-  description: "Verify personal details and event information before leaving."
+  description: "Verify personal details and event information before leaving.",
+  output: "Verified checklist entry or correction note.",
 };
 
 RELATE process:medical_death_notice->requires->task:mdn_prepare_request_context SET sort_order = 1;
@@ -2805,11 +3193,13 @@ RELATE task:mdn_collect_notice->requires->task:mdn_verify_notice_details SET sor
 -- ---------------------------------------------------------------------
 CREATE task:wan_prepare_affidavit_pack CONTENT {
   title: "Prepare Affidavit Package",
-  description: "Prepare witness identity and the statement draft to be notarized."
+  description: "Prepare witness identity and the statement draft to be notarized.",
+  output: "Prepared document package ready for the next submission step.",
 };
 CREATE task:wan_witness_identity_documents CONTENT {
   title: "Witness Identity Documents",
   description: "Prepare accepted witness identification documents.",
+  output: "Prepared document package ready for the next submission step.",
   required_documents_mode: "one_of",
   required_documents: [
     { name: "Kebele ID", process_key: "kebele_id_residency" },
@@ -2819,37 +3209,45 @@ CREATE task:wan_witness_identity_documents CONTENT {
 };
 CREATE task:wan_statement_draft CONTENT {
   title: "Statement Draft",
-  description: "Prepare complete witness statement draft for formal review."
+  description: "Prepare complete witness statement draft for formal review.",
+  output: "Verified checklist entry or correction note.",
 };
 
 CREATE task:wan_appear_before_authority CONTENT {
   title: "Appear Before Notary/Authority",
   description: "Appear in person for identity verification and sworn signing.",
+  output: "Signed and sealed notarized affidavit or witness statement.",
   location: "Notary/document authentication office or competent legal authority",
   links: [
-    { label: "Ministry of Justice", url: "https://moj.gov.et/" }
+    { label: "Ministry of Justice", url: "https://moj.gov.et/" },
+    { label: "Map (Google)", url: "https://www.google.com/maps/search/?api=1&query=Notary%2Fdocument%20authentication%20office%20or%20competent%20legal%20authority%2C%20Ethiopia" }
   ]
 };
 CREATE task:wan_identity_verification CONTENT {
   title: "Identity Verification",
-  description: "Complete witness identity verification before notarization."
+  description: "Complete witness identity verification before notarization.",
+  output: "Signed and sealed notarized affidavit or witness statement.",
 };
 CREATE task:wan_sign_in_presence CONTENT {
   title: "Sign in Presence of Officer",
-  description: "Sign statement in the presence of authorized officer/notary."
+  description: "Sign statement in the presence of authorized officer/notary.",
+  output: "Signed and sealed notarized affidavit or witness statement.",
 };
 
 CREATE task:wan_collect_notarized_output CONTENT {
   title: "Collect Notarized Output",
-  description: "Pay fees and collect notarized affidavit/statement."
+  description: "Pay fees and collect notarized affidavit/statement.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 CREATE task:wan_pay_notary_fees CONTENT {
   title: "Pay Notary/Service Fees",
-  description: "Pay applicable fees and keep official receipt."
+  description: "Pay applicable fees and keep official receipt.",
+  output: "Official payment receipt (bank slip or digital receipt).",
 };
 CREATE task:wan_verify_notarization_details CONTENT {
   title: "Verify Notarization Details",
-  description: "Verify stamp, signature, date, and witness details on final document."
+  description: "Verify stamp, signature, date, and witness details on final document.",
+  output: "Verified checklist entry or correction note.",
 };
 
 RELATE process:witness_affidavit_notarization->requires->task:wan_prepare_affidavit_pack SET sort_order = 1;

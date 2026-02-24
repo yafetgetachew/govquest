@@ -44,6 +44,7 @@ DEFINE FIELD IF NOT EXISTS attendance_modes ON process TYPE option<array<string>
 -- Task fields
 DEFINE FIELD IF NOT EXISTS title ON task TYPE string;
 DEFINE FIELD IF NOT EXISTS description ON task TYPE string;
+DEFINE FIELD IF NOT EXISTS output ON task TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS location ON task TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS links ON task TYPE option<array<object>>;
 DEFINE FIELD IF NOT EXISTS required_documents ON task TYPE option<array<object>>;

@@ -473,6 +473,7 @@ async function buildTaskNode(
   let taskId = "";
   let taskTitle = "Untitled Task";
   let taskDescription = "";
+  let taskOutput: string | undefined;
   let taskLocation: string | undefined;
   let taskLinks: ExternalLink[] = [];
   let requiredDocuments: RequiredDocument[] = [];
@@ -499,6 +500,7 @@ async function buildTaskNode(
 
     taskTitle = String(record.title ?? taskTitle);
     taskDescription = String(record.description ?? taskDescription);
+    taskOutput = toOptionalString(record.output);
     taskLocation = toOptionalString(record.location);
     taskLinks = toExternalLinks(record.links);
     requiredDocuments = toRequiredDocuments(record.required_documents);
@@ -514,6 +516,7 @@ async function buildTaskNode(
       key: "",
       title: taskTitle,
       description: taskDescription,
+      output: taskOutput,
       location: taskLocation,
       links: taskLinks,
       requiredDocuments,
@@ -531,6 +534,7 @@ async function buildTaskNode(
     if (taskRow) {
       taskTitle = String(taskRow.title ?? taskTitle);
       taskDescription = String(taskRow.description ?? taskDescription);
+      taskOutput = toOptionalString(taskRow.output);
       taskLocation = toOptionalString(taskRow.location);
       taskLinks = toExternalLinks(taskRow.links);
       requiredDocuments = toRequiredDocuments(taskRow.required_documents);
@@ -562,6 +566,7 @@ async function buildTaskNode(
       key: taskKey,
       title: taskTitle,
       description: taskDescription,
+      output: taskOutput,
       location: taskLocation,
       links: taskLinks,
       requiredDocuments,
@@ -582,6 +587,7 @@ async function buildTaskNode(
     key: taskKey,
     title: taskTitle,
     description: taskDescription,
+    output: taskOutput,
     location: taskLocation,
     links: taskLinks,
     requiredDocuments,

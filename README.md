@@ -54,6 +54,8 @@ When you add or update processes in `/Users/morph/Projects/gvt/surreal/schema-an
 pnpm db:catalog:build
 ```
 
+`pnpm db:catalog:build` now auto-runs enrichment to ensure each task has an `output` artifact and to add Google Maps links for process/task locations where available.
+
 3. Put Nginx/Caddy in front of port `3000` for TLS and set DNS to your domain.
 
 To stop production stack:
