@@ -94,22 +94,24 @@ export default async function ProcessPage({
 
   return (
     <main className="space-y-6 pb-10">
-      <section className="space-y-3 pb-5">
-        <div className="flex items-center gap-3">
-          <ProcessBackButton
-            aria-label="Back to processes"
-          />
-          <h2 className="text-3xl font-semibold tracking-tight text-foreground">{process.title}</h2>
+      <section className="space-y-5 pb-6 sm:space-y-6">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <ProcessBackButton
+              aria-label="Back to processes"
+            />
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground">{process.title}</h2>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="max-w-4xl space-y-3">
-            <section className="space-y-2 border border-border/70 bg-card/70 p-3">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="max-w-4xl space-y-4 sm:space-y-5">
+            <section className="space-y-3 border border-border/70 bg-card/70 p-4 sm:p-5">
               <p className="text-sm font-semibold text-foreground">Process overview</p>
-              <p className="text-sm text-muted-foreground">{process.summary}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{process.summary}</p>
               {process.explanation ? (
-                <p className="text-sm text-muted-foreground">{process.explanation}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{process.explanation}</p>
               ) : null}
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-xs text-muted-foreground">
                 <span>
                   Required by
                   {" "}
@@ -129,8 +131,8 @@ export default async function ProcessPage({
             {taskFlow.titles.length === 0 ? (
               <p className="max-w-4xl text-xs text-muted-foreground">No task summary available yet.</p>
             ) : (
-              <section className="space-y-2">
-                <div className="flex max-w-4xl flex-wrap items-center gap-2 text-xs">
+              <section className="space-y-2.5">
+                <div className="flex max-w-4xl flex-wrap items-center gap-2.5 text-xs">
                   {taskFlow.titles.map((title, index) => (
                     <span key={`${title}-${index}`} className="inline-flex items-center gap-2">
                       <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-1 font-medium text-primary">
@@ -146,8 +148,8 @@ export default async function ProcessPage({
               </section>
             )}
             {(process.location || process.links.length > 0) ? (
-              <section className="space-y-2">
-                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <section className="space-y-2.5 border-t border-border/60 pt-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 text-xs leading-relaxed text-muted-foreground">
                   {attendanceModes.length > 0 ? (
                     <span className="inline-flex items-center gap-1.5 text-foreground">
                       {attendanceModes.includes("in_person") ? (
@@ -205,7 +207,7 @@ export default async function ProcessPage({
         initialManualTaskStateByKey={questState.manualTaskStateByKey}
       />
 
-      <section className="space-y-3 border-t border-border/70 pt-5">
+      <section className="space-y-3 border-t border-border/70 pt-6">
         <h3 className="text-sm font-semibold text-foreground">Sources</h3>
         {sourceLinks.length > 0 ? (
           <div className="flex flex-wrap gap-2">
